@@ -1,12 +1,32 @@
 # EBcb
-EasyBuild Container Build 
+EasyBuild Container Build
 
 ### Overview
-EBcb creates a container with Lmod and Easybuild which can be used to test and build Easyconfigs. The container build allows control of the OS, lua,
-Lmod, EasyBuild and Toolchain versions.
+EBcb creates a container with Lmod and Easybuild installed which can be used to
+test and build Easyconfigs. The container build allows control of the OS, lua,
+Lmod, EasyBuild and Toolchain versions. EasyBuild configs are built and installed
+inside the container. To depoly an EasyBuild config into production run the
+container with a mapped volume to your sites software repository. 
 
-### Using the Container
 
+### Building the Container
+The Dockerfile uses environment variables to specifiy which versions of Lmod,
+EasyBuild and Toolchain to use. The UID/GID of the container users are also
+passed to the Docker file as environment variables. The UID/GID should be set
+to a non-root user that owns your software repository. The destination location
+for software builds is hardcoded to "/app", this should be changed base on
+your sites software repository. The base OS can also be customized to your local
+site. Example of how to build the container.
+
+```
+docker build . --no-cache --tag SITE-NAME/ls2_u-18_lmod-7.8_eb-3.8.0:foss-2018b \
+  --build-arg LS2_UID=${UID}\
+  --build-arg LS2_GID=${GID}\
+  --build-arg DEPLOY_PREFIX=/app \
+  --build-arg LMOD_VER=7.8 \
+  --build-arg EB_VER=3.8.0 \
+  --build-arg TOOLCHAIN=foss-2018b
+```
 
 ### Deploy new software package to /app (our NFS software archive)
 We keep our deployed software package on an NFS volume that we mount at /app. In order to use your recently
