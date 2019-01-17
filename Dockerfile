@@ -3,9 +3,9 @@ FROM ubuntu:18.04
 # These have reasonable defaults - only change if you really need to
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=America/Los_Angeles
-ARG LS2_USERNAME=neo
+ARG LS2_USERNAME=scicomp
 ENV LS2_USERNAME=${LS2_USERNAME}
-ARG LS2_GROUPNAME=neo
+ARG LS2_GROUPNAME=scicomp
 ENV LS2_GROUPNAME=${LS2_GROUPNAME}
 ARG LS2_UID=500
 ENV LS2_UID=${LS2_UID}
@@ -58,7 +58,8 @@ RUN ln -s /usr/bin/lua5.3 /usr/bin/lua && \
     ln -s ../../liblua5.3-posix.so.1.0.0 posix.so
 
 # copy in scripts and files
-COPY install_lmod.sh \
+COPY easyconfigs/ \
+     install_lmod.sh \
      install_easybuild.sh \
      eb_module_footer \
      install_toolchain.sh \
