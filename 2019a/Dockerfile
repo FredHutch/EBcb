@@ -59,7 +59,6 @@ RUN ln -s /usr/bin/lua5.3 /usr/bin/lua && \
 
 # copy in scripts and files
 COPY easyconfigs/ \
-     sources/ \
      install_lmod.sh \
      install_easybuild.sh \
      eb_module_footer \

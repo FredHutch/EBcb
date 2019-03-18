@@ -15,9 +15,6 @@ module use ${DEPLOY_PREFIX}/modules/all
 # load Easybuild
 module load EasyBuild
 
-# sometimes needed to provide source that has become unavailable
-export EASYBUILD_SOURCEPATH=${EASYBUILD_SOURCEPATH}:/ls2/sources
-
 # build the easyconfig file
 eb -l ${TOOLCHAIN}.eb --robot
 
