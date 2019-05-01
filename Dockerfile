@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:18.04 AS EBcb_os
 
 # These have reasonable defaults - only change if you really need to
 ENV DEBIAN_FRONTEND=noninteractive
@@ -56,6 +56,7 @@ RUN ln -s /usr/bin/lua5.3 /usr/bin/lua && \
     ln -s /usr/bin/luac5.3 /usr/bin/luac && \
     cd /usr/lib/x86_64-linux-gnu/lua/5.3 && \
     ln -s ../../liblua5.3-posix.so.1.0.0 posix.so
+FROM EBcb_os AS EBcb_eb
 
 # copy in scripts and files
 COPY easyconfigs/ \
@@ -79,6 +80,8 @@ RUN apt-get install -y build-essential \
     && AUTO_ADDED_PKGS=$(apt-mark showauto) apt-get remove -y --purge build-essential ${AUTO_ADDED_PKGS} \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
+FROM EBcb_eb AS EBcb_foss
+
 
 # gather pkg info
 RUN dpkg -l > /ls2/installed_pkgs.easybuild
