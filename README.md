@@ -42,3 +42,7 @@ Note that this overrides the Lmod in the container, so if version parity is impo
 Details: take a look into the scritps, but this procedure re-runs the build step from the Dockerfile as root in order to install/uninstall OS packages, and adjusts the uid/gid to match your deployment outside the container.
 
 Assumptions: /app exists, and you have already deployed the EasyBuild package into /app.
+
+### Adapting for Local Use
+Edit the set_env.sh file. Add the UID/GID that will be used to build and own software. Edit the APP_ROOT variable.  APP_ROOT will control where software is installed, when the container is used in depoly mode.
+
