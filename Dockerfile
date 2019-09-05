@@ -36,7 +36,9 @@ RUN \
     curl \
     cpio \
     git \
+    sudo \
     ssl-cert \
+    libssl-dev \
     liblua5.3-0 \
     lua-filesystem \
     lua-posix \
@@ -44,7 +46,10 @@ RUN \
     lua-term \
     lua5.3 \
     python \
-    python-setuptools
+    python-setuptools \
+    python-pip && \
+    pip install --upgrade pip && \
+    /usr/local/bin/pip install python-graph-core python-graph-dot pycodestyle pep8 GitPython
 RUN dpkg -l > /ls2/installed_pkgs.18.04-OS
     
 
@@ -58,7 +63,8 @@ RUN ln -s /usr/bin/lua5.3 /usr/bin/lua && \
     ln -s ../../liblua5.3-posix.so.1.0.0 posix.so
 FROM EBcb_os AS EBcb_eb
 
-# copy in scripts and files
+# copy helper scripts for building lmod, easybuild and
+# setup the environment for the the LS2_USER
 COPY easyconfigs/ \
      sources/ \
      install_lmod.sh \
@@ -67,13 +73,17 @@ COPY easyconfigs/ \
      install_toolchain.sh \
      install.sh \
      deploy.sh \
-     build_env.sh /ls2/
+     build_env.sh \
+     install_R.sh /ls2/
+COPY modules.sh /etc/profile.d/
+RUN  chown -R ${LS2_USERNAME}.${LS2_GROUPNAME} /ls2
 
-# os pkg list to be removed after the build - in EasyBuild, the 'dummy' toolchain requires build-essential
-# also, the current toolchain we are using (foss-2016b) does not actually include 'make'
-# removing build-essential will mean the resulting container cannot build additional software
-# install and uninstall build-essential in one step to reduce layer size
-# while installing Lmod
+# lmod EasyBuild layer
+# Base Ubuntu containers have no deve tools. In order to build Easybuild and the foss toolchain
+# build-essentials are required. But we do not want build-essentials to be part of the
+# EasyBuild continaer. 
+#
+# Use build-essentials in a single layer; install and uninstall build-essential in one step.
 
 RUN apt-get install -y build-essential \
     && su -c "/bin/bash /ls2/install_lmod.sh" ${LS2_USERNAME} \
@@ -91,6 +101,7 @@ RUN dpkg -l > /ls2/installed_pkgs.easybuild
 ENV INSTALL_OS_PKGS "awscli libibverbs-dev libc6-dev bzip2 make unzip xz-utils"
 ENV UNINSTALL_OS_PKGS ""
 
+# Toolchain Layer
 RUN DEBIAN_FRONTEND=noninteractive apt-get update \
     && apt-get install -y build-essential ${INSTALL_OS_PKGS} \
     && su -c "/bin/bash /ls2/install_toolchain.sh" ${LS2_USERNAME} \

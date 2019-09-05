@@ -4,9 +4,10 @@
 # Configure the UID/GID to be used to own software tools
 # Config the APP_ROOT location
 
-export cUID=65534
-export cGID=65534
-export APP_ROOT='/app'
+export LS2_UID=650
+export LS2_GID=500
+export DEPOLY_PREFIX='/app'
+export TZ='America/Los_Angeles'
 
 # Select the versions of EasyBuild and the Toolchain
 export EB_VER='3.9.4'
