@@ -80,11 +80,12 @@ docker exec -ti 2018b bash
 cd /ls2
 ./install_R.sh
 ```
-After a few hours the run will fail because it cannot file
+After a few hours the run will fail because it cannot find file
 **jdk-8u212-linux-x64.tar.gz**.  Download the Java JDK from Oracle
-and use Docker cp to it to the container. From inside the container
+and use Docker copy command to put the source tarball in the container.
+```docker cp jdk-8u212-linux-x64.tar.gz 2018b:/ls2``` From inside the container
 rerun the install_R.sh to continue.  The build will resume where from where
-it failed. A few hours later you will a working R install with over 600
+it failed. A few hours later you will have a working R install with over 600
 packages.
 
 
