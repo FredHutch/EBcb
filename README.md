@@ -3,13 +3,12 @@
 ### Overview
 EBcb project aims to normalize and automate the building of
 Life Sciences Software software packages. The Hutch
-uses this method along with EasyBuild to manage our scientific software install
-archive.
+uses this method along with EasyBuild to manage our scientific software library.
 
 EasyBuild provides a framework for building scientific software which can be
-documented and reproduced. EBcb creates a container with EasyBuild which can be
-used to test and build EasyConfigs. Building all software with a container provides
-a consistent, reproducible method of for building software. In practice
+documented and reproduced. EBcb is a containerized build platform which uses EasyBuild for
+testing and building EasyConfigs. Building software in a container provides
+a consistent, reproducible build environment. In practice
 a new container instance is run for each package to ensure reproducibility of
 software. The same container is used for testing and deploying software defined by
 EasyConfigs. To deploy an EasyBuild config into production run the
