@@ -80,14 +80,9 @@ RUN ln -s /usr/bin/lua5.3 /usr/bin/lua && \
 
 # copy helper scripts for building lmod, easybuild and
 # setup the environment for the the EBUSER_
-COPY install_lmod.sh \
+COPY scripts/ \
      eb_module_footer \
      app_module_footer \
-     install.sh \
-     install_toolchain.sh \
-     deploy.sh \
-     build_env.sh \
-     install_R.sh \
      sources/ \
      easyconfigs/ /ls2/
 RUN  chown -R ${EBUSER_NAME}.${EBGROUP_NAME} /ls2
