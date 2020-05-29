@@ -20,4 +20,3 @@ export EASYBUILD_SOURCEPATH=${EASYBUILD_SOURCEPATH}:/ls2/sources
 
 # build the easyconfig file
 eb -l ${TOOLCHAIN}.eb --robot
-

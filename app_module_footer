@@ -1,6 +1,6 @@
 -- ensure packages and modules end up where we expect 18.04
 -- This file is appended to the EasyBuild Modules file
-local ebDir = "/eb"
+local ebDir = "/app"
 setenv("EASYBUILD_SOURCEPATH", ebDir .. "/sources")
 setenv("EASYBUILD_BUILDPATH", ebDir .. "/build")
 setenv("EASYBUILD_INSTALLPATH_SOFTWARE", ebDir .. "/software")

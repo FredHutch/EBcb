@@ -19,8 +19,8 @@ apt-get autoremove -y
 #  Build R
 sudo -H -u scicomp bash <<"EOF"
 cd /ls2
-source /app/lmod/lmod/init/profile
-module use /app/modules/all
+source /eb/lmod/lmod/init/profile
+module use /eb/modules/all
 module load EasyBuild
 eb R-3.5.1-foss-2018b.eb --robot
 EOF

@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# Create the environment for EBcb container
+# Configure the UID/GID to be used to own software tools
+# source this file before building a container
+
+export LS2_UID=650
+export LS2_GID=500
+export TZ='America/Los_Angeles'

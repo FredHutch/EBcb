@@ -1,3 +1,4 @@
-run*
-build*
 sources/*
+set_env.sh
+build.log
+bootstrap*
