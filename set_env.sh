@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Create the environment for EBcb
 # Set the UID/GID of the easbuild user to your sites owner of your EasyBuild software
