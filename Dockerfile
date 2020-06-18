@@ -149,7 +149,8 @@ RUN \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
-    awscli libibverbs-dev libc6-dev bzip2 make unzip xz-utils \
+    awscli bzip2 make unzip xz-utils \
+    libibverbs-dev libc6-dev libnspr4-dev libv8-dev \
     curl wget \
     cpio \
     git \

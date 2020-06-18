@@ -16,7 +16,7 @@ fi
 
 export LMOD_VER='8.3.10'
 # docker build . --no-cache --tag fredhutch/ls2:eb-${EB_VER}-${TOOLCHAIN} \
-docker build . --tag fredhutch/ls2:eb-${EB_VER}-${TOOLCHAIN} \
+docker build .             --tag fredhutch/ls2:eb-${EB_VER}-${TOOLCHAIN} \
   --build-arg EBUSER_UID=${EBUSER_UID} \
   --build-arg EBUSER_GID=${EBUSER_GID} \
   --build-arg DEPLOY_PREFIX=/eb \
