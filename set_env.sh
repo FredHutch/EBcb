@@ -7,5 +7,5 @@
 export EBUSER_UID=6514  # scicomp
 export EBUSER_GID=6514  # g_scicomp
 export TZ='America/Los_Angeles'
-export EB_VER='4.2.1'
+export EB_VER='4.2.2'
 export TOOLCHAIN='foss-2019b'

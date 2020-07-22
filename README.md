@@ -51,6 +51,16 @@ source set_env.sh
 build_container.sh
 ```
 
+#### Sources
+It is not always possible to find sources during a Docker build.  Sources can be copied
+ into the container at build time. Copy sources into the ```sources``` directory of this
+repository. All files in ```sources``` directory are copied into the container at location
+```/ls2/sources```.  The ```/ls2/sources``` path is added to *EASYBUILD_SOURCEPATH* making
+ the sources available to EasyBuild during container build time.
+
+During run time of the container, sources are searched in ```/app/sources```. If sources
+are not available at run time, they can be copied into the container with ```Docker cp``` command. 
+
 ### Deploy new software package to /app (our site software archive)
 We keep our deployed software repository on an NFS volume that we mount at /app. 
 In order to use your recently build EBcb software package container to deploy
