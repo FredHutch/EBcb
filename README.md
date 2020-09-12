@@ -51,10 +51,11 @@ source set_env.sh
 build_container.sh
 ```
 
-#### Sources
-It is not always possible to find sources during a Docker build.  Sources can be copied
- into the container at build time. Copy sources into the ```sources``` directory of this
-repository. All files in ```sources``` directory are copied into the container at location
+#### Sources available at build time and run time.
+In some cases, you may need to “seed in” manually downloaded source files into the container
+build environment, because the sources can not be downloaded automatically. 
+Source files from the ```sources``` directory will be seeded int the the build environment.
+All files in ```sources``` directory are copied into the container build environment at location
 ```/ls2/sources```.  The ```/ls2/sources``` path is added to *EASYBUILD_SOURCEPATH* making
  the sources available to EasyBuild during container build time.
 
