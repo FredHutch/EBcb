@@ -1,4 +1,4 @@
 sources/*
-set_env.sh
+scripts/set_uid.sh
 build.log
 bootstrap*

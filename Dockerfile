@@ -13,8 +13,8 @@ FROM ubuntu:18.04 AS build
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=America/Los_Angeles
 
-ENV EBUSER_NAME=eb_user
-ENV EBUSER_GROUP=eb_group
+ENV EBUSER=eb_user
+ENV EBGROUP=eb_group
 ARG EBUSER_UID=EBUSER_UID
 ENV EBUSER_UID=${EBUSER_UID}
 ARG EBUSER_GID=EBUSER_GID
@@ -25,23 +25,17 @@ ARG EB_VER
 ENV EB_VER=${EB_VER}
 ARG TOOLCHAIN
 ENV TOOLCHAIN=${TOOLCHAIN}
-ARG DEPLOY_PREFIX=/eb
-ENV DEPLOY_PREFIX=${DEPLOY_PREFIX}
-# ---- easybuild env variables
-ENV EASYBUILD_PREFIX=${DEPLOY_PREFIX}
-ENV EASYBUILD_MODULES_TOOL=Lmod
-ENV EASYBUILD_MODULE_SYNTAX=Lua
-
+ARG PREFIX=/eb
+ARG BUILD_DIR=/build
 
 # OS Level
 # OS Packages, EasyBuild needs Python and Lmod, Lmod needs lua
-# Base OS packages, user account, set TZ, directory for /ls2 and EBUSER
-# Create install directory ${DEPLOY_PREFIX}
+# Base OS packages, user account, set TZ, user account EBUSER
+# Create install directory ${BUILD_DIR} 
 RUN \
-    groupadd -g ${EBUSER_GID} ${EBUSER_GROUP} && \
-    useradd -u ${EBUSER_UID} -g ${EBUSER_GROUP} -ms /bin/bash ${EBUSER_NAME} && \
-    mkdir ${DEPLOY_PREFIX} && chown ${EBUSER_UID}.${EBUSER_GID} ${DEPLOY_PREFIX} && \
-    mkdir /ls2 && mkdir /ls2/sources && chown -R ${EBUSER_UID}.${EBUSER_GID} /ls2 && \
+    groupadd -g ${EBUSER_GID} ${EBGROUP} && \
+    useradd -u ${EBUSER_UID} -g ${EBUSER_GID} -ms /bin/bash ${EBUSER} && \
+    mkdir ${BUILD_DIR} && \
     apt-get update && \
     apt-get install -y \
     build-essential \
@@ -66,7 +60,7 @@ RUN \
     # python-pip  && \
     # pip install --upgrade pip && \
     # /usr/local/bin/pip install python-graph-core python-graph-dot pycodestyle pep8 GitPython && \
-    echo "${EBUSER_NAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+    echo "${EBUSER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 
 # Fix issues with lua5.3 5.3.3-1 on Ubuntu 18.04
@@ -80,12 +74,12 @@ RUN ln -s /usr/bin/lua5.3 /usr/bin/lua && \
 
 # copy helper scripts for building lmod, easybuild and
 # setup the environment for the the EBUSER_
-COPY scripts/ \
-     eb_module_footer \
-     app_module_footer \
-     sources/ \
-     easyconfigs/ /ls2/
-RUN  chown -R ${EBUSER_NAME}.${EBGROUP_NAME} /ls2
+ADD scripts  ${BUILD_DIR}/scripts
+ADD easyconfigs ${BUILD_DIR}/easyconfig
+ADD sources ${BUILD_DIR}/sources
+
+RUN  chown -R ${EBUSER_UID}:${EBUSER_GID} ${BUILD_DIR}
+ 
 
 # lmod EasyBuild layer
 # Base Ubuntu containers have no develop tools. In order to build Easybuild and the foss toolchain
@@ -95,56 +89,46 @@ RUN  chown -R ${EBUSER_NAME}.${EBGROUP_NAME} /ls2
  
 # Install EasyBuild and the Toolchain into /eb
 
-#--- Install LMod
-
-RUN su -c "/bin/bash /ls2/install_lmod.sh" ${EBUSER_NAME}
-
-#-- Install EasyBuild
+#-- Build the /eb volume in a single command -
+#   Install LMOD, EB and build a toolchain too /eb 
 #   configure EB build target to build software in directory /eb
 #   EasyBuild is used to build toolchain in /eb directory
 #   save original EasyBuild.lua so it can be re-configured to build target /app
 RUN \
-    su -c "cd /ls2 && \
-           source ${DEPLOY_PREFIX}/lmod/lmod/init/profile && \
-           curl -L -O https://github.com/easybuilders/easybuild-framework/raw/easybuild-framework-v${EB_VER}/easybuild/scripts/bootstrap_eb.py && \
-           python /ls2/bootstrap_eb.py ${EASYBUILD_PREFIX}" ${EBUSER_NAME} && \
-    su -c "cp ${DEPLOY_PREFIX}/modules/all/EasyBuild/${EB_VER}.lua \
-              ${DEPLOY_PREFIX}/modules/all/EasyBuild/${EB_VER}.orig" ${EBUSER_NAME} && \
-    su -c "cat /ls2/eb_module_footer >> ${DEPLOY_PREFIX}/modules/all/EasyBuild/${EB_VER}.lua" ${EBUSER_NAME}
-
+    mkdir /eb && chown ${EBUSER_UID}:${EBUSER_GID} /eb && \
+#--- Install LMod local 
+    su -c "/bin/bash ${BUILD_DIR}/scripts/install_lmod.sh" && \
+#--- Install EB
+    su -c "/bin/bash ${BUILD_DIR}/scripts/install_easybuild.sh" ${EBUSER} && \
 #--- Toolchain Layer
-RUN su -c "/bin/bash /ls2/install_toolchain.sh" ${EBUSER_NAME}
+    su -c "/bin/bash ${BUILD_DIR}/scripts/install_toolchain.sh" ${EBUSER} && \
+#--- reconfigure EB to install software to /app
+    su -c "cat ${BUILD_DIR}/scripts/app_module_footer >> ${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua" ${EBUSER}
+#
+# Finished with build container
 
-#-- reconfigure EB to install software to /app
-RUN \
-    cd /ls2 && \
-    su -c "mv ${DEPLOY_PREFIX}/modules/all/EasyBuild/${EB_VER}.orig \
-              ${DEPLOY_PREFIX}/modules/all/EasyBuild/${EB_VER}.lua" ${EBUSER_NAME} && \
-    su -c "cat /ls2/app_module_footer >> ${DEPLOY_PREFIX}/modules/all/EasyBuild/${EB_VER}.lua" ${EBUSER_NAME}
-
-# Finished
 
 # ============================================
 # Create the EB container from "build" container
 #
 FROM ubuntu:18.04 as easybuild 
-COPY --from=build /eb /eb
-COPY --from=build /ls2 /ls2
-COPY modules.sh /etc/profile.d/
 
 ENV TZ=America/Los_Angeles
-ENV EBUSER_NAME=eb_user
-ENV EBUSER_GROUP=eb_group
+ARG EBUSER=eb_user
+ARG EBGROUP=eb_group
 ARG EBUSER_UID=EBUSER_UID
-ENV EBUSER_UID=${EBUSER_UID}
 ARG EBUSER_GID=EBUSER_GID
-ENV EBUSER_GID=${EBUSER_GID}
+ARG PREFIX=/eb
+ARG BUILD_DIR=/build
+
+WORKDIR /
+COPY --from=build /eb . 
+COPY scripts/modules.sh /etc/profile.d/
 
 RUN \ 
-    groupadd -g ${EBUSER_GID} ${EBUSER_GROUP} && \
-    useradd -u ${EBUSER_UID} -g ${EBUSER_GROUP} -ms /bin/bash ${EBUSER_NAME} && \
-    chown -R ${EBUSER_UID}.${EBUSER_GID} /eb && \
-    mkdir /app && chown ${EBUSER_NAME}.${EBUSER_GROUP} /app && \
+    groupadd -g ${EBUSER_GID} ${EBGROUP} && \
+    useradd -u ${EBUSER_UID} -g ${EBGROUP} -ms /bin/bash ${EBUSER} && \
+    mkdir /app && chown ${EBUSER}:${EBGROUP} /app && \
     chmod 775 /etc/profile.d/modules.sh && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
@@ -176,6 +160,6 @@ RUN ln -s /usr/bin/lua5.3 /usr/bin/lua && \
     ln -s ../../liblua5.3-posix.so.1.0.0 posix.so
 
 # switch to EBUSER user for future actions
-# USER ${EBUSER_NAME}
-WORKDIR /ls2
+# USER ${EBUSER}
+WORKDIR ${BUILD_DIR} 
 SHELL ["/bin/bash", "-c"]

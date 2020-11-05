@@ -9,14 +9,13 @@ set -e
 umask 002
 
 # load modules
-source ${DEPLOY_PREFIX}/lmod/lmod/init/bash
-module use ${DEPLOY_PREFIX}/modules/all
+source ${PREFIX}/lmod/lmod/init/bash
+module use ${PREFIX}/modules/all
 
 # load Easybuild
 module load EasyBuild
 
-# sometimes needed to provide source that has become unavailable
-export EASYBUILD_SOURCEPATH=${EASYBUILD_SOURCEPATH}:/ls2/sources
+echo EASYBUILD_SOURCEPATH: ${EASYBUILD_SOURCEPATH}
 
 # build the easyconfig file
 eb -l ${TOOLCHAIN}.eb --robot

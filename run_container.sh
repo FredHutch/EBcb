@@ -4,4 +4,4 @@
 docker run --rm -ti --name 2019b \
  --detach \
  --security-opt seccomp=unconfined \
- fredhutch/ls2:eb-4.2.2-foss-2019b
+ fredhutch/ls2:eb-4.3.1-foss-2019b
