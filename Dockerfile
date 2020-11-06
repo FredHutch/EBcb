@@ -122,7 +122,7 @@ ARG PREFIX=/eb
 ARG BUILD_DIR=/build
 
 WORKDIR /
-COPY --from=build /eb . 
+COPY --from=build /eb /eb 
 COPY scripts/modules.sh /etc/profile.d/
 
 RUN \ 

@@ -22,7 +22,7 @@ run EasyBuild. Start the container and become the eb_user. The user account
 environment is configured and ready to use EasyBuild.
 
 ```
-source set_env.sh
+source scripts/set_uid.sh
 ./run_container.sh
 docker exec -ti eb-4.2.1-foss-2019b bash
 sudo su - eb_user
@@ -34,8 +34,8 @@ In test mode EasyBuild writes to the local container file sysetm to ```/app```. 
 
 ### Building the Container
 The Dockerfile uses environment variables to specify all the parameters of the
-the build. Edit the values in the script ```set_env.sh``` to configure your
-environment. In use the script should be sourced. Create your own set_env.sh from set_env.demo. The following variables need to be definded before building a container. The UID/GID should be set to a non-root user that owns your software repository. The TOOLCHAIN should be set to the EasyBuild toolchain you have decided to use.
+the build. Edit the values in the script ```scripts/set_uid.sh``` to configure your
+environment. In use the script should be sourced. Create your own scripts/set_uid.sh from ```scripts/set_uid.demo```. The following variables need to be definded before building a container. The UID/GID should be set to a non-root user that owns your software repository. The TOOLCHAIN should be set to the EasyBuild toolchain you have decided to use.
 
 ```
 export EBUSER_UID=65535
@@ -47,7 +47,7 @@ export TOOLCHAIN='foss-2019b'
 
 To build the container;
 ```
-source set_env.sh
+source scripts/set_uid.sh
 build_container.sh
 ```
 

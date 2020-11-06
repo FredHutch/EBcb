@@ -4,6 +4,6 @@
 # Configure the UID/GID to be used to own software tools
 # source this file before building a container
 
-export LS2_UID=650
-export LS2_GID=500
+export EBUSER_UID=600
+export EBUSER_GID=600
 export TZ='America/Los_Angeles'
