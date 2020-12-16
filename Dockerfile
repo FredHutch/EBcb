@@ -75,7 +75,7 @@ RUN ln -s /usr/bin/lua5.3 /usr/bin/lua && \
 # copy helper scripts for building lmod, easybuild and
 # setup the environment for the the EBUSER_
 ADD scripts  ${BUILD_DIR}/scripts
-ADD easyconfigs ${BUILD_DIR}/easyconfig
+ADD easyconfigs ${BUILD_DIR}/easyconfigs
 ADD sources ${BUILD_DIR}/sources
 
 RUN  chown -R ${EBUSER_UID}:${EBUSER_GID} ${BUILD_DIR}

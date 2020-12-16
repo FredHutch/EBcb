@@ -23,7 +23,7 @@ echo Repo Owner UID: $EBUSER_UID
 
 export LMOD_VER='8.3.10'
 export EB_VER='4.3.1'
-export TOOLCHAIN='foss-2019b'
+export TOOLCHAIN='foss-2020b'
 
 tag=fredhutch/ls2:eb-${EB_VER}-${TOOLCHAIN}
 echo Creating Container ${tag}

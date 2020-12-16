@@ -1,8 +1,5 @@
 #!/bin/bash
 
-set -x
-set -e
-
 # variables used: TOOLCHAIN, DEPLOY_PREFIX
 
 # try to preserve group write here
@@ -18,4 +15,4 @@ module load EasyBuild
 echo EASYBUILD_SOURCEPATH: ${EASYBUILD_SOURCEPATH}
 
 # build the easyconfig file
-eb -l ${TOOLCHAIN}.eb --robot
+eb -l ${TOOLCHAIN}.eb --robot=${BUILD_DIR}/easyconfigs

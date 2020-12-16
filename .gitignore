@@ -2,3 +2,4 @@ sources/*
 scripts/set_uid.sh
 build.log
 bootstrap*
+easyconfigs/*
