@@ -32,12 +32,19 @@ ARG BUILD_DIR=/build
 # OS Packages, EasyBuild needs Python and Lmod, Lmod needs lua
 # Base OS packages, user account, set TZ, user account EBUSER
 # Create install directory ${BUILD_DIR} 
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y locales && \
+    /usr/sbin/locale-gen en_US.UTF-8 && \
+    update-locale LANG=en_US.UTF-8
+
+ENV LANG en_US.UTF-8 
+
 RUN \
     groupadd -g ${EBUSER_GID} ${EBGROUP} && \
     useradd -u ${EBUSER_UID} -g ${EBUSER_GID} -ms /bin/bash ${EBUSER} && \
     mkdir ${BUILD_DIR} && \
     apt-get update && \
-    apt-get install -y \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
     build-essential \
     awscli libibverbs-dev libc6-dev bzip2 make unzip xz-utils \
     bash \
