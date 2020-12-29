@@ -5,9 +5,6 @@
 # Create the Easybuild software on volume /eb
 # Minimize the size of container by putting build artifacts into /build
  
-set -x
-set -e
-
 echo "Installing EasyBuild $EB_VER into /eb..."
 
 PREFIX=/eb

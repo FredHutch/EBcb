@@ -37,7 +37,7 @@ RUN apt-get update && \
     /usr/sbin/locale-gen en_US.UTF-8 && \
     update-locale LANG=en_US.UTF-8
 
-ENV LANG en_US.UTF-8 
+ENV LANG=en_US.UTF-8 
 
 RUN \
     groupadd -g ${EBUSER_GID} ${EBGROUP} && \
@@ -137,7 +137,12 @@ RUN \
     useradd -u ${EBUSER_UID} -g ${EBGROUP} -ms /bin/bash ${EBUSER} && \
     mkdir /app && chown ${EBUSER}:${EBGROUP} /app && \
     chmod 775 /etc/profile.d/modules.sh && \
-    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y locales && \
+    /usr/sbin/locale-gen en_US.UTF-8 && \
+    update-locale LANG=en_US.UTF-8
+
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
     awscli bzip2 make unzip xz-utils \
