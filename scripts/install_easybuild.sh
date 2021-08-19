@@ -1,47 +1,33 @@
 #!/bin/bash
 
 # EBcb EasyBuild container build
-# Install EasyBuild in a Docker Container
-# Create the Easybuild software on volume /eb
-# Minimize the size of container by putting build artifacts into /build
+# this script runs as the easybuild user eb_user
  
-echo "Installing EasyBuild $EB_VER into /eb..."
+echo "Installing EasyBuild into /eb..."
 
-PREFIX=/eb
-BUILD_DIR=/build
+export EB_VER=$1
+export PREFIX=$2
+export EB_TMPDIR=$3
+export BUILD_DIR=$4
 
-echo "Setting EasyBuild env vars..."
-export EASYBUILD_MODULES_TOOL=Lmod
-export EASYBUILD_MODULE_SYNTAX=Lua
-export EASYBUILD_SOURCEPATH=/build/sources
-export EASYBUILD_BUILDPATH=/build/build
-export EASYBUILD_INSTALLPATH_SOFTWARE=/eb/software
-export EASYBUILD_INSTALLPATH_MODULES=/eb/modules
-export EASYBUILD_REPOSITORYPATH=/build/ebfiles_repo
-export EASYBUILD_LOGFILE_FORMAT="logs,easybuild-%(name)s-%(version)s-%(date)s.%(time)s.log"
-
-export EASYBUILD_GROUP_WRITABLE_INSTALLDIR=1
-export EASYBUILD_UMASK=002
-export EASYBUILD_MODULE_SYNTAX=Lua
-export EASYBUILD_MODULES_TOOL=Lmod
-
-echo "Getting bootstrap_eb.py..."
-curl -L -o /tmp/bootstrap_eb.py https://github.com/easybuilders/easybuild-framework/raw/easybuild-framework-v${EB_VER}/easybuild/scripts/bootstrap_eb.py
+# update environment to use this temporary EasyBuild installation
+export PATH=$EB_TMPDIR/bin:$PATH
+export PYTHONPATH=$(/bin/ls -rtd -1 $EB_TMPDIR/lib*/python*/site-packages | tail -1):$PYTHONPATH
+export EB_PYTHON=python3
 
 echo "Loading Lmod..."
-source ${PREFIX}/lmod/lmod/init/bash
-
-echo "Bootstrapping EasyBuild ${EB_VER} into $PREFIX}..."
-export EASYBUILD_BOOTSTRAP_FORCE_VERSION=${EB_VER}
-python /tmp/bootstrap_eb.py /eb 
+source ${PREFIX}/lmod/lmod/init/profile
+module use ${PREFIX}/modules/all
+eb --install-latest-eb-release --prefix ${PREFIX}/easybuild --installpath-modules=${PREFIX}/modules
 
 echo "Customizing EasyBuild modulefile..."
-if [ -w "/${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua" ]
+if [ -f "${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua" ]
 then
   cat ${BUILD_DIR}/scripts/eb_module_footer >> ${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua
   echo EasyBuild install success
 else
-  error_exit "/${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua not writable, modulefile not updated"
+  echo "${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua not writable, modulefile not updated"
+  exit 1
 fi
 
 #=================

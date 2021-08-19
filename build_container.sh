@@ -21,13 +21,13 @@ if [[ -z "${EBUSER_UID}" || -z "${EBUSER_GID}" ]]; then
 fi 
 echo Repo Owner UID: $EBUSER_UID
 
-export LMOD_VER='8.3.10'
-export EB_VER='4.3.2'
+export LMOD_VER='8.5.2'
+export EB_VER='4.4.1'
 export TOOLCHAIN='foss-2020b'
 
 tag=fredhutch/ls2:eb-${EB_VER}-${TOOLCHAIN}
 echo Creating Container ${tag}
-#docker build . --no-cache --tag ${tag}
+#docker build . --no-cache --tag ${tag}\
 docker build .             --tag ${tag}\
   --build-arg EBUSER_UID=${EBUSER_UID} \
   --build-arg EBUSER_GID=${EBUSER_GID} \

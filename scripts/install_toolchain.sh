@@ -1,6 +1,10 @@
 #!/bin/bash
 
-# variables used: TOOLCHAIN, DEPLOY_PREFIX
+# install Toolchain with EasyBuild 
+
+export PREFIX=$1
+export BUILD_DIR=$2
+export TOOLCHAIN=$3
 
 # try to preserve group write here
 umask 002

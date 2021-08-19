@@ -10,6 +10,12 @@ echo "PREFIX is ${PREFIX}"
 # variables used: LMOD_VER
 echo "LMOD_VER is ${LMOD_VER}"
 
+mkdir -p ${PREFIX}/modules/all
+
+LMOD_CONFIGURE="--with-module-root-path=${PREFIX}/modules/all \
+                --with-updateSystemFn=${PREFIX}/lmod/cache/last_update \
+                --with-spiderCacheDir=${PREFIX}/lmod/cache"
+
 # try to preserve group write here
 umask 002
 
@@ -21,7 +27,7 @@ curl -L -o Lmod-${LMOD_VER}.tar.gz https://github.com/TACC/Lmod/archive/${LMOD_V
 echo "Extracting Lmod..."
 tar -xzf Lmod-${LMOD_VER}.tar.gz
 
-echo "Building Lmod..."
+echo "Building Lmod version ${LMOD_VER}..."
 cd Lmod-${LMOD_VER}
 ./configure --prefix=${PREFIX} --with-tcl=no ${LMOD_CONFIGURE}
 make install

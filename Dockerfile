@@ -25,14 +25,15 @@ ARG EB_VER
 ENV EB_VER=${EB_VER}
 ARG TOOLCHAIN
 ENV TOOLCHAIN=${TOOLCHAIN}
-ARG PREFIX=/eb
-ARG BUILD_DIR=/build
+ENV PREFIX=/eb
+ENV BUILD_DIR=/build
+ENV EB_TMPDIR=/tmp/eb 
 
-# OS Level
+ #OS Level
 # OS Packages, EasyBuild needs Python and Lmod, Lmod needs lua
 # Base OS packages, user account, set TZ, user account EBUSER
 # Create install directory ${BUILD_DIR} 
-RUN apt-get update && \
+RUN apt-get update -y && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y locales && \
     /usr/sbin/locale-gen en_US.UTF-8 && \
     update-locale LANG=en_US.UTF-8
@@ -54,19 +55,21 @@ RUN \
     sudo \
     ssl-cert \
     libssl-dev \
+    lua5.3 \
     liblua5.3-0 \
+    liblua5.3-dev \
     lua-filesystem \
     lua-posix \
     lua-json \
     lua-term \
-    lua5.3 \
-    python \
-    # Manpages is required for Perl to install
-    groff groff-base  manpages manpages-dev \
-    python-setuptools && \
-    # python-pip  && \
-    # pip install --upgrade pip && \
-    # /usr/local/bin/pip install python-graph-core python-graph-dot pycodestyle pep8 GitPython && \
+    python3 \
+    python3-pip \
+    python3-pep8 \
+    python3-setuptools \
+    groff groff-base  manpages manpages-dev && \
+# Make Python3 the default
+    update-alternatives --install /usr/bin/python python /usr/bin/python3 1 && \
+    update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1 && \
     echo "${EBUSER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 
@@ -85,8 +88,8 @@ ADD scripts  ${BUILD_DIR}/scripts
 ADD easyconfigs ${BUILD_DIR}/easyconfigs
 ADD sources ${BUILD_DIR}/sources
 
-RUN  chown -R ${EBUSER_UID}:${EBUSER_GID} ${BUILD_DIR}
  
+RUN  chown -R ${EBUSER_UID}:${EBUSER_GID} ${BUILD_DIR}
 
 # lmod EasyBuild layer
 # Base Ubuntu containers have no develop tools. In order to build Easybuild and the foss toolchain
@@ -97,56 +100,59 @@ RUN  chown -R ${EBUSER_UID}:${EBUSER_GID} ${BUILD_DIR}
 # Install EasyBuild and the Toolchain into /eb
 
 #-- Build the /eb volume in a single command -
-#   Install LMOD, EB and build a toolchain too /eb 
+#   Install LMOD, EB and build a toolchain in /eb 
 #   configure EB build target to build software in directory /eb
 #   EasyBuild is used to build toolchain in /eb directory
 #   save original EasyBuild.lua so it can be re-configured to build target /app
 RUN \
-    mkdir /eb && chown ${EBUSER_UID}:${EBUSER_GID} /eb && \
+    mkdir ${PREFIX} && \
 #--- Install LMod local 
+    mkdir $EB_TMPDIR && \
     su -c "/bin/bash ${BUILD_DIR}/scripts/install_lmod.sh" && \
-#--- Install EB
-    su -c "/bin/bash ${BUILD_DIR}/scripts/install_easybuild.sh" ${EBUSER} && \
+#--- Install tmp EB
+    python3 -m pip install --ignore-installed --prefix $EB_TMPDIR easybuild && \
+#-- Install EasyBuild as a Module
+    chown -R ${EBUSER_UID}:${EBUSER_GID} ${PREFIX} && \
+    su -c "/bin/bash ${BUILD_DIR}/scripts/install_easybuild.sh $EB_VER $PREFIX $EB_TMPDIR $BUILD_DIR" ${EBUSER} && \
 #--- Toolchain Layer
-    su -c "/bin/bash ${BUILD_DIR}/scripts/install_toolchain.sh" ${EBUSER} && \
+    su -c "/bin/bash ${BUILD_DIR}/scripts/install_toolchain.sh $PREFIX $BUILD_DIR $TOOLCHAIN" ${EBUSER} && \
 #--- reconfigure EB to install software to /app
     su -c "cat ${BUILD_DIR}/scripts/app_module_footer >> ${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua" ${EBUSER}
-#
+
 # Finished with build container
-
-
 # ============================================
 # Create the EB container from "build" container
 #
-FROM ubuntu:18.04 as easybuild 
+FROM ubuntu:18.04 as easybuild
 
-ENV TZ=America/Los_Angeles
-ARG EBUSER=eb_user
-ARG EBGROUP=eb_group
 ARG EBUSER_UID=EBUSER_UID
 ARG EBUSER_GID=EBUSER_GID
-ARG PREFIX=/eb
-ARG BUILD_DIR=/build
+ENV TZ=America/Los_Angeles
+ENV LANG=en_US.UTF-8
+ENV EBUSER=eb_user
+ENV EBGROUP=eb_group
+ENV PREFIX=/eb
+ENV BUILD_DIR=/build
 
 WORKDIR /
-COPY --from=build /eb /eb 
+COPY --from=build /eb /eb
 COPY scripts/modules.sh /etc/profile.d/
 
-RUN \ 
-    groupadd -g ${EBUSER_GID} ${EBGROUP} && \
+RUN groupadd -g ${EBUSER_GID} ${EBGROUP} && \
     useradd -u ${EBUSER_UID} -g ${EBGROUP} -ms /bin/bash ${EBUSER} && \
     mkdir /app && chown ${EBUSER}:${EBGROUP} /app && \
     chmod 775 /etc/profile.d/modules.sh && \
-    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
-    apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y locales && \
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# set Languange
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
+    apt-utils locales && \
     /usr/sbin/locale-gen en_US.UTF-8 && \
     update-locale LANG=en_US.UTF-8
 
-
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
-    awscli bzip2 make unzip xz-utils \
-    libibverbs-dev libc6-dev libnspr4-dev libv8-dev \
+    ca-certificates awscli bzip2 make unzip xz-utils \
+    libibverbs-dev libc6-dev libnspr4-dev libv8-dev libnpth0 \
     curl wget \
     cpio \
     git \
@@ -160,7 +166,9 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
     lua-json \
     lua-term \
     lua5.3 \
-    python
+    python3 \
+    python3-pep8 \
+
 
 # Fix issues with lua5.3 5.3.3-1 on Ubuntu 18.04
 # lua-posix changed its main module name from posix_c to posix which causes
@@ -173,5 +181,5 @@ RUN ln -s /usr/bin/lua5.3 /usr/bin/lua && \
 
 # switch to EBUSER user for future actions
 # USER ${EBUSER}
-WORKDIR ${BUILD_DIR} 
+WORKDIR ${BUILD_DIR}
 SHELL ["/bin/bash", "-c"]
