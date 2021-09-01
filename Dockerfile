@@ -1,4 +1,7 @@
-FROM ubuntu:18.04 AS build 
+FROM ubuntu:18.04 AS build
+
+# Aug 2021 - Use Python3 for Easybuild. Remove Python2. Install EasyBuild to
+# /tmp with pip and re-install EasyBuild with EasyBuild as a module.
 
 # updated to support EasyBuild 4.x  summer 2019
 # Create Easybuild container with docker multi-stage.
@@ -9,12 +12,6 @@ FROM ubuntu:18.04 AS build
 # Final <easybuild> container COPIES /eb without bring any build-essentials
 # into the final container.
 
-# These have reasonable defaults - only change if you really need to
-ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=America/Los_Angeles
-
-ENV EBUSER=eb_user
-ENV EBGROUP=eb_group
 ARG EBUSER_UID=EBUSER_UID
 ENV EBUSER_UID=${EBUSER_UID}
 ARG EBUSER_GID=EBUSER_GID
@@ -25,20 +22,25 @@ ARG EB_VER
 ENV EB_VER=${EB_VER}
 ARG TOOLCHAIN
 ENV TOOLCHAIN=${TOOLCHAIN}
+ARG TZ
+ENV TZ=${TZ}
+
+ENV EBUSER=eb_user
+ENV EBGROUP=eb_group
 ENV PREFIX=/eb
 ENV BUILD_DIR=/build
-ENV EB_TMPDIR=/tmp/eb 
+ENV EB_TMPDIR=/tmp/eb
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=en_US.UTF-8
 
- #OS Level
+# OS Level
 # OS Packages, EasyBuild needs Python and Lmod, Lmod needs lua
 # Base OS packages, user account, set TZ, user account EBUSER
-# Create install directory ${BUILD_DIR} 
+# Create install directory ${BUILD_DIR}
 RUN apt-get update -y && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y locales && \
     /usr/sbin/locale-gen en_US.UTF-8 && \
-    update-locale LANG=en_US.UTF-8
-
-ENV LANG=en_US.UTF-8 
+    update-locale LANG=$LANG
 
 RUN \
     groupadd -g ${EBUSER_GID} ${EBGROUP} && \
@@ -48,6 +50,7 @@ RUN \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
     build-essential \
     awscli libibverbs-dev libc6-dev bzip2 make unzip xz-utils \
+    autopoint \
     bash \
     curl \
     cpio \
@@ -70,14 +73,10 @@ RUN \
 # Make Python3 the default
     update-alternatives --install /usr/bin/python python /usr/bin/python3 1 && \
     update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1 && \
-    echo "${EBUSER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-
-
+# setup sudo for eb_user
+    echo "${EBUSER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
 # Fix issues with lua5.3 5.3.3-1 on Ubuntu 18.04
-# lua-posix changed its main module name from posix_c to posix which causes
-# Lmod install fails with lua-posix not found.
-# This should be fixed with lua-posix 33.4.0-3 binary
-RUN ln -s /usr/bin/lua5.3 /usr/bin/lua && \
+    ln -s /usr/bin/lua5.3 /usr/bin/lua && \
     ln -s /usr/bin/luac5.3 /usr/bin/luac && \
     cd /usr/lib/x86_64-linux-gnu/lua/5.3 && \
     ln -s ../../liblua5.3-posix.so.1.0.0 posix.so
@@ -88,7 +87,7 @@ ADD scripts  ${BUILD_DIR}/scripts
 ADD easyconfigs ${BUILD_DIR}/easyconfigs
 ADD sources ${BUILD_DIR}/sources
 
- 
+
 RUN  chown -R ${EBUSER_UID}:${EBUSER_GID} ${BUILD_DIR}
 
 # lmod EasyBuild layer
@@ -96,17 +95,17 @@ RUN  chown -R ${EBUSER_UID}:${EBUSER_GID} ${BUILD_DIR}
 # build-essentials are required. But we do not want build-essentials to be part of the
 # EasyBuild continaer. EasyBuild and toolchain are built in 'build' stage and not copied
 # into the easybuild stage.
- 
+
 # Install EasyBuild and the Toolchain into /eb
 
 #-- Build the /eb volume in a single command -
-#   Install LMOD, EB and build a toolchain in /eb 
+#   Install LMOD, EB and build a toolchain in /eb
 #   configure EB build target to build software in directory /eb
 #   EasyBuild is used to build toolchain in /eb directory
 #   save original EasyBuild.lua so it can be re-configured to build target /app
 RUN \
     mkdir ${PREFIX} && \
-#--- Install LMod local 
+#--- Install LMod local
     mkdir $EB_TMPDIR && \
     su -c "/bin/bash ${BUILD_DIR}/scripts/install_lmod.sh" && \
 #--- Install tmp EB
@@ -127,7 +126,8 @@ FROM ubuntu:18.04 as easybuild
 
 ARG EBUSER_UID=EBUSER_UID
 ARG EBUSER_GID=EBUSER_GID
-ENV TZ=America/Los_Angeles
+ARG TZ=$TZ
+
 ENV LANG=en_US.UTF-8
 ENV EBUSER=eb_user
 ENV EBGROUP=eb_group
@@ -153,6 +153,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
     ca-certificates awscli bzip2 make unzip xz-utils \
     libibverbs-dev libc6-dev libnspr4-dev libv8-dev libnpth0 \
+    autopoint \
     curl wget \
     cpio \
     git \
@@ -160,15 +161,18 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
     ssl-cert \
     libssl-dev \
     openssl \
-    liblua5.3-0 \
+    lua5.3 \
     lua-filesystem \
     lua-posix \
     lua-json \
     lua-term \
-    lua5.3 \
+    liblua5.3-0 \
     python3 \
-    python3-pep8 \
-
+    python3-distutils \
+    python3-setuptools \
+    python3-pep8 && \
+# Make Python3 the default
+    update-alternatives --install /usr/bin/python python /usr/bin/python3 1
 
 # Fix issues with lua5.3 5.3.3-1 on Ubuntu 18.04
 # lua-posix changed its main module name from posix_c to posix which causes
