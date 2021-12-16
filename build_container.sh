@@ -7,31 +7,32 @@
 # Set the environment variables EBUSER_UID and EBUSER_GID to the UID:GID of your local repository owner
 # Configure your sites UID:GID in the script set_uid.sh
 
-if [[ -z "${EBUSER_UID}" || -z "${EBUSER_GID}" ]]; then
-    if [[ -f scripts/set_uid.sh ]]; then
-        source set_uid.sh
-    else
-        echo EBUSER_UID EBUSER_GID must be set 
-        echo Set the environment variables EBUSER_UID and EBUSER_GID to the UID:GID of your local repository owner.
-        echo Create a bash script set_uid.sh to set your UID GID of your repository owner
-        echo export EBUSER_UID=
-        echo export EBUSER_GID=
+eb_vars='EBUSER_UID
+EBUSER_GID
+LMOD_VER
+EB_VER
+TOOLCHAIN'
+
+if [[ $# -eq 0 ]]; then
+    echo "Dockerfile name required as argument"
+    exit 1
+fi
+
+for eb_var in ${eb_vars}; do
+    if [[ -z "${!eb_var}" ]]; then
+        echo ${eb_var} must be set 
         exit 1
     fi
-fi 
+done
 echo Repo Owner UID: $EBUSER_UID
 
-export LMOD_VER='8.5.2'
-export EB_VER='4.4.1'
-export TOOLCHAIN='foss-2020b'
 
 tag=fredhutch/ls2:eb-${EB_VER}-${TOOLCHAIN}
-echo Creating Container ${tag}
-#docker build . --no-cache --tag ${tag}\
-docker build .             --tag ${tag}\
+echo Creating Container ${tag} from Dockerfile: $1
+docker build . --file $1 --no-cache --tag ${tag}\
   --build-arg EBUSER_UID=${EBUSER_UID} \
   --build-arg EBUSER_GID=${EBUSER_GID} \
   --build-arg LMOD_VER=${LMOD_VER} \
   --build-arg EB_VER=${EB_VER} \
   --build-arg TOOLCHAIN=${TOOLCHAIN} \
-  --build-arg TZ='America/Los_Angeles'
+  --build-arg TZ='America/Los_Angeles' 

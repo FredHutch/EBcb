@@ -17,7 +17,7 @@ export PYTHONPATH=$(/bin/ls -rtd -1 $EB_TMPDIR/lib*/python*/site-packages | tail
 echo "Loading Lmod..."
 source ${PREFIX}/lmod/lmod/init/profile
 module use ${PREFIX}/modules/all
-eb --install-latest-eb-release --prefix ${PREFIX} --installpath-modules=${PREFIX}/modules
+eb --install-latest-eb-release --accept-eula-for=Intel-oneAPI --prefix ${PREFIX} --installpath-modules=${PREFIX}/modules
 
 echo "Customizing EasyBuild modulefile..."
 if [ -f "${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua" ]

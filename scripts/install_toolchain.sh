@@ -10,7 +10,7 @@ export TOOLCHAIN=$3
 umask 002
 
 # load modules
-source ${PREFIX}/lmod/lmod/init/bash
+source ${PREFIX}/lmod/lmod/init/profile
 module use ${PREFIX}/modules/all
 
 # load Easybuild
@@ -19,4 +19,4 @@ module load EasyBuild
 echo EASYBUILD_SOURCEPATH: ${EASYBUILD_SOURCEPATH}
 
 # build the easyconfig file
-eb -l ${TOOLCHAIN}.eb --robot=${BUILD_DIR}/easyconfigs
+eb -l ${TOOLCHAIN}.eb --robot
