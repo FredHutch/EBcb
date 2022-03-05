@@ -5,6 +5,7 @@ local buildDir = "/build"
 setenv("EASYBUILD_SOURCEPATH", ebDir .. "/sources")
 prepend_path("EASYBUILD_SOURCEPATH", "/build/sources")
 setenv("EASYBUILD_BUILDPATH", buildDir .. "/build")
+setenv("EASYBUILD_INSTALLPATH", ebDir)
 setenv("EASYBUILD_INSTALLPATH_SOFTWARE", ebDir .. "/software")
 setenv("EASYBUILD_INSTALLPATH_MODULES", ebDir .. "/modules")
 setenv("EASYBUILD_REPOSITORYPATH", buildDir .. "/ebfiles_repo")

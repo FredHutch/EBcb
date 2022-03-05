@@ -2,6 +2,16 @@
 
 # EBcb EasyBuild container build
 # this script runs as the easybuild user eb_user
+
+# 2022.02.08 keep extra copy of Easybuild lua file as ${EB_VER}.orig
+#            add Easybuild config to the /eb volume via /etc/easybuild.d/config.cfg
+#            Set Compute Capablity in config.cfg 
+# EB-4.5.0 Use two set process to install EasyBuild. This method replaces the "bootstrap"
+#          metho of install.
+#          Step one - pip install EasyBuild followed by creating an  $EB_TEMPDIR
+#          Step Two - Use EasyBuild to reinstall EasyBuild and create a lua module. $PREFIX
+#          Start using Python 3 to install and run EasyBuild
+#          Set default Python too Python3, this is done in the Dockerfile
  
 echo "Installing EasyBuild into /eb..."
 
@@ -19,9 +29,17 @@ source ${PREFIX}/lmod/lmod/init/profile
 module use ${PREFIX}/modules/all
 eb --install-latest-eb-release --accept-eula-for=Intel-oneAPI --prefix ${PREFIX} --installpath-modules=${PREFIX}/modules
 
+# create EasyBuild configuration in /etc/. This configuration is used for building the toolchain in
+# step one of the container build.
+mkdir /etc/easybuild.d
+cp  ${BUILD_DIR}/scripts/config.cfg /etc/easybuild.d
+
+echo Copy EasyBuild module in /eb
+
 echo "Customizing EasyBuild modulefile..."
 if [ -f "${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua" ]
 then
+  cp ${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua ${PREFIX}/modules/all/EasyBuild/${EB_VER}.orig
   cat ${BUILD_DIR}/scripts/eb_module_footer >> ${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua
   echo EasyBuild install success
 else
@@ -29,9 +47,3 @@ else
   exit 1
 fi
 
-#=================
-#    su -c "cp ${DEPLOY_PREFIX}/modules/all/EasyBuild/${EB_VER}.lua \
-#              ${DEPLOY_PREFIX}/modules/all/EasyBuild/${EB_VER}.orig" ${EBUSER} && \
-#    su -c "cat /ls2/eb_module_footer >> ${DEPLOY_PREFIX}/modules/all/EasyBuild/${EB_VER}.lua" ${EBUSER} && \
-#
-#============== 

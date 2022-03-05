@@ -58,8 +58,6 @@ RUN \
     sudo \
     ssl-cert \
     libssl-dev \
-    libcrypto++6 \
-    openssl \
     lua5.3 \
     liblua5.3-0 \
     liblua5.3-dev \
@@ -116,7 +114,10 @@ RUN \
     chown -R ${EBUSER_UID}:${EBUSER_GID} ${PREFIX} && \
     su -c "/bin/bash ${BUILD_DIR}/scripts/install_easybuild.sh $EB_VER $PREFIX $EB_TMPDIR $BUILD_DIR" ${EBUSER} && \
 #--- Toolchain Layer
-    su -c "/bin/bash ${BUILD_DIR}/scripts/install_toolchain.sh $EB_VER $TOOLCHAIN $PREFIX $BUILD_DIR" ${EBUSER}
+    su -c "/bin/bash ${BUILD_DIR}/scripts/install_toolchain.sh $PREFIX $BUILD_DIR $TOOLCHAIN" ${EBUSER} && \
+#--- reconfigure EB to install software to /app
+    su -c "cp ${PREFIX}/modules/all/EasyBuild/${EB_VER}.orig ${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua" ${EBUSER} && \
+    su -c "cat ${BUILD_DIR}/scripts/app_module_footer >> ${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua" ${EBUSER}
 
 # Finished with build container
 # ============================================
@@ -160,7 +161,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
     sudo \
     ssl-cert \
     libssl-dev \
-    libcrypto++6 \
     openssl \
     lua5.3 \
     lua-filesystem \

@@ -1,25 +1,60 @@
 # EBcb - EasyBuild Container Build
 
-### Overview
-EBcb project aims to normalize and automate the building of
-Life Sciences Software packages with Docker containers. Fred Hutch
-uses this method along with EasyBuild to manage scientific software library.
 
-EasyBuild provides a framework for building scientific software which can be
-documented and reproduced. EBcb is a containerized build platform which uses EasyBuild for
-testing and building EasyConfigs. Building software in a container provides
-a clean room for building software;
-a consistent, reproducible build environment. In practice
-a new container instance is run for each package to ensure reproducibility of
-software. The same container is used for testing and deploying software defined by
-EasyConfigs. To deploy an EasyBuild config into production run the
-container with a mapped volume to your site software repository. In testing, the
-results are written within the container without producing side effects.
+# Overview
+EBcb aims to normalize the building of scientific software by containerizing EasyBuild.
+
+EBcb is a containerized build platform that uses EasyBuild for
+testing and building EasyConfigs.
+EBcb controls the build environment, and EasyBuild easyconfigs control the
+build requirements of the scientific software.
+
+EasyBuild uses toolchains which is a collection of build tools and system libraries.
+EBcb containers have EasyBuild software installed with a ToolChain. EBcb instance
+can build Easyconfigs without using any native OS build tools.
+
+### Cleanroom
+Running EasyBuild in a container provides many benefits.
+Building software in a container is a cleanroom approach for building software.
+The process of building software can contaminate the build environment by pulling
+in additional packages and leaving artifacts in the OS environment. Building each
+EasyConfig from a fresh container eliminates from previous builds.
+
+The same container is used for testing and deploying easyconfigs.
+For production deployment of easyconfig map EBcb:/app volume to your production /app.
 
 ### Container Design
-EasyBuild, LMOD and a complete toolchain are install into the directory ```/eb```. The build environment inside the container is owned by the account eb_user. The eb_user UID/GID is to be mapped to your site softwware repository owner. EasyBuild does not run as root. After buiding the container, it can be used to
-run EasyBuild. Start the container and become the eb_user. The user account
-environment is configured and ready to use EasyBuild.
+EasyBuild, LMOD and a complete toolchain are install into the directory ```/eb```. 
+The build environment inside the container is owned by the account eb_user. 
+The eb_user UID/GID needs to be mapped to your sites softwware repository owner.
+EasyBuild does not run as root. The eb_user's environment is
+configured to use EasyBuild.
+
+EBcb is created with a multistage build. A full development environment is required to build EasyBuild 
+and a ToolChain. But the OS build tools are not desierable to have present when using EasyBuild
+to build software.
+
+#### First Stage
+  - OS packages
+  - Install build-utilites (chicken and egg) Toolchain can't be built without Build-Utils
+  - Install Ubuntu Python3 and pip, make Python3 the default at the OS level
+
+  With one single Run command create /eb volume which contains EasyBuild and toolchain
+    - install EasyBuild and configure to build all modules in /eb
+    - configure EasyBuild with /etc/easybuild.d/config.c
+    - install LMOD in /eb/modules
+    - install and build toolchain in /eb/software
+    - re-configure EasyBuild to build all modules in /app
+    - configure EasyBuild with /app/easybuild/config.c
+
+#### Second Stage
+  - Create EasyBuild user and group.  eb_user is mapped to local /app owner
+  - Install OS packages (sans Build-Utils)
+  - Install Python3 and make default
+  - Copy /eb from first stage
+  - Finished container has no artificats from building with Build-Utils
+  - Will use tools found in /eb to create new modules in /app
+
 
 ```
 source scripts/set_uid.sh
@@ -64,8 +99,8 @@ During run time of the container, sources are searched in ```/app/sources```. If
 are not available at run time, they can be copied into the container with ```Docker cp``` command. 
 
 ### Deploy new software package to /app (our site software archive)
-We keep our deployed software repository on an NFS volume that we mount at /app. 
-In order to use your recently build EBcb software package container to deploy
+We keep our deployed software repository on an NFS mounted at /app. 
+In order to use your recently built EBcb software package container to deploy
 the same package into our /app NFS volume, user ```run_deploy.sh```.
 
 The steps above will use the container you just built, but will re-build the easyconfig and all dependencies into the "real" /app, using Lmod, EasyBuild, and dependent packages from the "real" /app.
