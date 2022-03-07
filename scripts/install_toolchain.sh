@@ -3,9 +3,9 @@
 # install Toolchain with EasyBuild 
 
 export EB_VER=$1
-export TOOLCHAIN=$2
-export PREFIX=$3
-export BUILD_DIR=$4
+export PREFIX=$2
+export BUILD_DIR=$3
+export TOOLCHAIN=$4
 
 # try to preserve group write here
 umask 002

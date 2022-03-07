@@ -29,11 +29,6 @@ source ${PREFIX}/lmod/lmod/init/profile
 module use ${PREFIX}/modules/all
 eb --install-latest-eb-release --accept-eula-for=Intel-oneAPI --prefix ${PREFIX} --installpath-modules=${PREFIX}/modules
 
-# create EasyBuild configuration in /etc/. This configuration is used for building the toolchain in
-# step one of the container build.
-mkdir /etc/easybuild.d
-cp  ${BUILD_DIR}/scripts/config.cfg /etc/easybuild.d
-
 echo Copy EasyBuild module in /eb
 
 echo "Customizing EasyBuild modulefile..."

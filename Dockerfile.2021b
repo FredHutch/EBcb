@@ -111,12 +111,18 @@ RUN \
     su -c "/bin/bash ${BUILD_DIR}/scripts/install_lmod.sh" && \
 #--- Install tmp EB
     mkdir $EB_TMPDIR && \
+    mkdir /etc/easybuild.d && \
+    chmod 775 /etc/easybuild.d && \
+    cp  ${BUILD_DIR}/scripts/config.cfg /etc/easybuild.d && \
     python3 -m pip install --ignore-installed --prefix $EB_TMPDIR easybuild && \
 #-- Install EasyBuild as a Module
     chown -R ${EBUSER_UID}:${EBUSER_GID} ${PREFIX} && \
     su -c "/bin/bash ${BUILD_DIR}/scripts/install_easybuild.sh $EB_VER $PREFIX $EB_TMPDIR $BUILD_DIR" ${EBUSER} && \
 #--- Toolchain Layer
-    su -c "/bin/bash ${BUILD_DIR}/scripts/install_toolchain.sh $EB_VER $TOOLCHAIN $PREFIX $BUILD_DIR" ${EBUSER}
+    su -c "/bin/bash ${BUILD_DIR}/scripts/install_toolchain.sh $EB_VER $PREFIX $BUILD_DIR $TOOLCHAIN" ${EBUSER} && \
+#--- reconfigure EB to install software to /app
+    su -c "cp ${PREFIX}/modules/all/EasyBuild/${EB_VER}.orig ${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua" ${EBUSER} && \
+    su -c "cat ${BUILD_DIR}/scripts/app_module_footer >> ${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua" ${EBUSER}
 
 # Finished with build container
 # ============================================
