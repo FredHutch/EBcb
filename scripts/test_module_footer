@@ -1,14 +1,15 @@
--- ensure packages and modules end up where we expect 18.04
--- This file is appended to the EasyBuild Modules file
-local ebDir = "/app"
+-- Configure EBcb EasyBuild for testing
+-- This file is appended to the EasyBuild_test Modules file from test_module_footer
+local ebDir = "/eb"
+local appDir = "/app"
 setenv("EASYBUILD_SOURCEPATH", ebDir .. "/sources")
-setenv("EASYBUILD_BUILDPATH", "/build")
+append_path("EASYBUILD_SOURCEPATH", appDir .. "/sources")
+setenv("EASYBUILD_BUILDPATH", appDir .. "/build")
 setenv("EASYBUILD_INSTALLPATH", ebDir)
 setenv("EASYBUILD_INSTALLPATH_SOFTWARE", ebDir .. "/software")
 setenv("EASYBUILD_INSTALLPATH_MODULES", ebDir .. "/modules")
 setenv("EASYBUILD_REPOSITORYPATH", ebDir .. "/ebfiles_repo")
 setenv("EASYBUILD_LOGFILE_FORMAT", "logs,easybuild-%(name)s-%(version)s-%(date)s.%(time)s.log")
-setenv("EASYBUILD_CONFIGFILES", ebDir .. "/easybuild/config.cfg")
 -- keep group writable bit
 setenv("EASYBUILD_GROUP_WRITABLE_INSTALLDIR", 1)
 -- set umask to preserve group write permissions on modulefiles

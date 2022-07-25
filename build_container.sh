@@ -29,10 +29,12 @@ echo Repo Owner UID: $EBUSER_UID
 
 tag=fredhutch/ls2:eb-${EB_VER}-${TOOLCHAIN}
 echo Creating Container ${tag} from Dockerfile: $1
+# docker build . --file $1  --tag ${tag}\
 docker build . --file $1 --no-cache --tag ${tag}\
   --build-arg EBUSER_UID=${EBUSER_UID} \
   --build-arg EBUSER_GID=${EBUSER_GID} \
   --build-arg LMOD_VER=${LMOD_VER} \
   --build-arg EB_VER=${EB_VER} \
   --build-arg TOOLCHAIN=${TOOLCHAIN} \
-  --build-arg TZ='America/Los_Angeles' 
+  --build-arg TZ='America/Los_Angeles' \
+  --build-arg LANG='en_US.UTF-8'
