@@ -1,5 +1,6 @@
--- ensure packages and modules end up where we expect 18.04
 -- This file is appended to the EasyBuild Modules file
+-- EasyBuild config used during first stage of container build for building
+-- the initial toolchain inside the container
 local ebDir = "/eb"
 setenv("EASYBUILD_SOURCEPATH", ebDir .. "/sources")
 prepend_path("EASYBUILD_SOURCEPATH", "/build/sources")

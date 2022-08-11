@@ -7,8 +7,14 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
-[[ -z "${TOOLCHAIN}" ]] && { echo 'TOOLCHAIN env not set' ; exit; }
-[[ -z "${EB_VER}" ]] && { echo 'EB_VER env not set' ; exit; }
+env_vars='TOOLCHAIN EB_VER BUILD_DIR SOURCE_DIR'
+for var in $env_vars; do
+    if [[ -z "${!var}" ]]; then 
+         echo $var not set ; exit
+    else
+         echo Using $var: ${!var}
+    fi
+done
 
 containerName=${TOOLCHAIN:5}-${EB_VER}-$1
 
@@ -18,5 +24,6 @@ docker run --gpus all --rm -ti --name ${containerName} --hostname $1 \
  --security-opt="seccomp=unconfined" \
  --env EASYCONFIG=foo \
  -v /app:/app \
- -v /fh/scratch/delete10/_ADM/SciComp/eb_build:/build \
+ -v ${SOURCE_DIR}:/sources \
+ -v ${BUILD_DIR}:/build \
  fredhutch/ls2:eb-${EB_VER}-${TOOLCHAIN} bash 

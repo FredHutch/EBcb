@@ -24,6 +24,8 @@ ARG TOOLCHAIN
 ENV TOOLCHAIN=${TOOLCHAIN}
 ARG TZ
 ENV TZ=${TZ}
+ARG LANG=LANG
+ENV LANG=${LANG}
 
 ENV EBUSER=eb_user
 ENV EBGROUP=eb_group
@@ -31,13 +33,13 @@ ENV PREFIX=/eb
 ENV BUILD_DIR=/build
 ENV EB_TMPDIR=/tmp/eb
 ENV DEBIAN_FRONTEND=noninteractive
-ENV LANG=en_US.UTF-8
 
 # OS Level
 # OS Packages, EasyBuild needs Python and Lmod, Lmod needs lua
 # Base OS packages, user account, set TZ, user account EBUSER
 # Create install directory ${BUILD_DIR}
-RUN apt-get update -y && \
+RUN echo "LANG=${LANG}" > /etc/default/locale && \
+    apt-get update -y && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y locales && \
     /usr/sbin/locale-gen en_US.UTF-8 && \
     update-locale LANG=$LANG
@@ -58,6 +60,8 @@ RUN \
     sudo \
     ssl-cert \
     libssl-dev \
+    libcrypto++6 \
+    openssl \
     lua5.3 \
     liblua5.3-0 \
     liblua5.3-dev \
@@ -106,16 +110,20 @@ RUN  chown -R ${EBUSER_UID}:${EBUSER_GID} ${BUILD_DIR}
 RUN \
     mkdir ${PREFIX} && \
 #--- Install LMod local
-    mkdir $EB_TMPDIR && \
     su -c "/bin/bash ${BUILD_DIR}/scripts/install_lmod.sh" && \
 #--- Install tmp EB
+    mkdir $EB_TMPDIR && \
+    mkdir /etc/easybuild.d && \
+    chmod 775 /etc/easybuild.d && \
+    cp  ${BUILD_DIR}/scripts/config.cfg /etc/easybuild.d && \
     python3 -m pip install --ignore-installed --prefix $EB_TMPDIR easybuild && \
 #-- Install EasyBuild as a Module
     chown -R ${EBUSER_UID}:${EBUSER_GID} ${PREFIX} && \
     su -c "/bin/bash ${BUILD_DIR}/scripts/install_easybuild.sh $EB_VER $PREFIX $EB_TMPDIR $BUILD_DIR" ${EBUSER} && \
 #--- Toolchain Layer
-    su -c "/bin/bash ${BUILD_DIR}/scripts/install_toolchain.sh $PREFIX $BUILD_DIR $TOOLCHAIN" ${EBUSER} && \
+    su -c "/bin/bash ${BUILD_DIR}/scripts/install_toolchain.sh $EB_VER $PREFIX $BUILD_DIR $TOOLCHAIN" ${EBUSER} && \
 #--- reconfigure EB to install software to /app
+    su -c "cp ${PREFIX}/modules/all/EasyBuild/${EB_VER}.orig ${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua" ${EBUSER} && \
     su -c "cat ${BUILD_DIR}/scripts/app_module_footer >> ${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua" ${EBUSER}
 
 # Finished with build container
@@ -126,29 +134,39 @@ FROM ubuntu:18.04 as easybuild
 
 ARG EBUSER_UID=EBUSER_UID
 ARG EBUSER_GID=EBUSER_GID
-ARG TZ=$TZ
+ARG EASYCONFIG=EASYCONFIG
+ENV EASYCONFIG=${EASYCONFIG}
+ARG TZ=TZ
+ENV TZ=${TZ}
+ARG LANG=LANG
+ENV LANG=${LANG}
 
-ENV LANG=en_US.UTF-8
 ENV EBUSER=eb_user
 ENV EBGROUP=eb_group
 ENV PREFIX=/eb
-ENV BUILD_DIR=/build
 
 WORKDIR /
 COPY --from=build /eb /eb
 COPY scripts/modules.sh /etc/profile.d/
 
+RUN mkdir /etc/easybuild.d && \
+    chmod 775 /etc/easybuild.d
+COPY scripts/config.cfg /etc/easybuild.d/config.cfg
+RUN chmod 644 /etc/easybuild.d/config.cfg
+
 RUN groupadd -g ${EBUSER_GID} ${EBGROUP} && \
     useradd -u ${EBUSER_UID} -g ${EBGROUP} -ms /bin/bash ${EBUSER} && \
     mkdir /app && chown ${EBUSER}:${EBGROUP} /app && \
+    mkdir ${BUILD_DIR} && chown ${EBUSER}:${EBGROUP} ${BUILD_DIR} && \
     chmod 775 /etc/profile.d/modules.sh && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # set Languange
-RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
+RUN echo "LANG=${LANG}" > /etc/default/locale && \
+    DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
     apt-utils locales && \
     /usr/sbin/locale-gen en_US.UTF-8 && \
-    update-locale LANG=en_US.UTF-8
+    update-locale LANG=${LANG}
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
     ca-certificates awscli bzip2 make unzip xz-utils \
@@ -160,6 +178,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
     sudo \
     ssl-cert \
     libssl-dev \
+    libcrypto++6 \
     openssl \
     lua5.3 \
     lua-filesystem \
@@ -185,5 +204,5 @@ RUN ln -s /usr/bin/lua5.3 /usr/bin/lua && \
 
 # switch to EBUSER user for future actions
 # USER ${EBUSER}
-WORKDIR ${BUILD_DIR}
+WORKDIR ${PREFIX}
 SHELL ["/bin/bash", "-c"]

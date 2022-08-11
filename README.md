@@ -1,7 +1,4 @@
-# EBcb - EasyBuild Container Build
-
-
-# Overview
+### Overview
 EBcb aims to normalize the building of scientific software by containerizing EasyBuild.
 
 EBcb is a containerized build platform that uses EasyBuild for
@@ -9,100 +6,28 @@ testing and building EasyConfigs.
 EBcb controls the build environment, and EasyBuild easyconfigs control the
 build requirements of the scientific software.
 
-EasyBuild uses toolchains which is a collection of build tools and system libraries.
-EBcb containers have EasyBuild software installed with a ToolChain. EBcb instance
-can build Easyconfigs without using any native OS build tools.
+EasyBuild uses toolchains which is a collection of build tools and libraries.
+EBcb containers have EasyBuild software installed with a ToolChain. EBcb instance can build Easyconfigs without using any native OS build tools.
 
-### Cleanroom
-Running EasyBuild in a container provides many benefits.
-Building software in a container is a cleanroom approach for building software.
+#### Cleanroom Methology
+EBcb provides a cleanroom approach for installing software.
 The process of building software can contaminate the build environment by pulling
-in additional packages and leaving artifacts in the OS environment. Building each
-EasyConfig from a fresh container eliminates from previous builds.
-
-The same container is used for testing and deploying easyconfigs.
-For production deployment of easyconfig map EBcb:/app volume to your production /app.
-
-### Container Design
-EasyBuild, LMOD and a complete toolchain are install into the directory ```/eb```. 
-The build environment inside the container is owned by the account eb_user. 
-The eb_user UID/GID needs to be mapped to your sites softwware repository owner.
-EasyBuild does not run as root. The eb_user's environment is
-configured to use EasyBuild.
-
-EBcb is created with a multistage build. A full development environment is required to build EasyBuild 
-and a ToolChain. But the OS build tools are not desierable to have present when using EasyBuild
-to build software.
-
-#### First Stage
-  - OS packages
-  - Install build-utilites (chicken and egg) Toolchain can't be built without Build-Utils
-  - Install Ubuntu Python3 and pip, make Python3 the default at the OS level
-
-  With one single Run command create /eb volume which contains EasyBuild and toolchain
-    - install EasyBuild and configure to build all modules in /eb
-    - configure EasyBuild with /etc/easybuild.d/config.c
-    - install LMOD in /eb/modules
-    - install and build toolchain in /eb/software
-    - re-configure EasyBuild to build all modules in /app
-    - configure EasyBuild with /app/easybuild/config.c
-
-#### Second Stage
-  - Create EasyBuild user and group.  eb_user is mapped to local /app owner
-  - Install OS packages (sans Build-Utils)
-  - Install Python3 and make default
-  - Copy /eb from first stage
-  - Finished container has no artificats from building with Build-Utils
-  - Will use tools found in /eb to create new modules in /app
-
-
+in additional packages and leaving artifacts in the OS environment. EBcb at the Fred Hutch has provided a consistent, repeatable environment for building EasyConfigs by combining an EasyConfige with a tagged container.
 ```
-source scripts/set_uid.sh
-./run_container.sh
-docker exec -ti eb-4.2.1-foss-2019b bash
-# Become the Easybuild user from the root account in the container.
-su - eb_user
+fredhutch/ls2:eb-4.0.3-foss-2019b   cfdd57f673ef
+fredhutch/ls2:eb-4.5.4-foss-2020b   d49b971f15bb
+fredhutch/ls2:eb-4.6.0-foss-2021b   51fa37926564
 ```
-
-LMOD is configured to search /eb/modules/all:/app/modules/all for modules. Easybuild is configured to write new packages into ```/app```.
-
-In test mode EasyBuild writes to the local container file sysetm to ```/app```. In depoly mode, map /app in the container to your site software repository.
-
 ### Building the Container
-The Dockerfile uses environment variables to specify all the parameters of the
-the build. Edit the values in the script ```scripts/set_uid.sh``` to configure your
-environment. In use the script should be sourced. Create your own scripts/set_uid.sh from ```scripts/set_uid.demo```. The following variables need to be definded before building a container. The UID/GID should be set to a non-root user that owns your software repository. The TOOLCHAIN should be set to the EasyBuild toolchain you have decided to use.
+Use the script `build_EBcb.sh` to create an EBcb Docker container. The environment variables, TOOLCHAIN, EB_VER, EBUSER_UID, EBUSER_GID are used to customize EBcb and tagging the container. EBcb runtime environment uses the account `eb_user` to run EasyBuild. Map your site's software repository owner to the account `eb_user` with the environment variables: EBUSER_UID, EBUSER_GID. 
 
-```
-export EBUSER_UID=65535
-export EBUSER_GID=65535
-export TZ='America/Los_Angeles'
-export EB_VER='4.5.1'
-export TOOLCHAIN='foss-2021b'
-```
+### Starting EBcb instance
+Use the script `run_EBcb.sh "container name"` to start an instance of EBcb. Environment variables are by `run_EBcb to select and run an EBcb container. TOOLCHAIN, EB_VER, BUILD_DIR, SOURCE_DIR. `run_EBcb.sh` appends `"container name"` to the image name to a unique image name. EBcb runtime environment for EasyBuild has four primary volume locations: /app, /eb, /build and /sources.  `/app` should be mapped to your target application directory, which contains the subdirectories software and modules. `/eb` is local to the container and should not be mapped.   Map the volume`/sources` to your software source repository. Map the build volume to any suitable scratch area.
 
-To build the container;
-```
-source scripts/set_uid.sh
-build_container.sh
-```
+### Usage
+When the EBcb instance starts, you will be at a root prompt. Become the easybuild user with `su - eb_user` and change the directory to `cd /build.`  Two EasyBuild modules are available in /eb/modules. EasyBuild and EasyBuild_test. EasyBuild_test is used for testing an EasyConfig. EasyBuild_test sets `installpath-software` to `/eb/software` and will not write to the production /app volume. When your EasyConfig is ready to deploy load the module EasyBuild. 
 
 #### Sources available at build time and run time.
-In some cases, you may need to “seed” manually downloaded source files into the container
-build environment, because the sources can not be downloaded automatically. 
-Source files from the ```sources``` directory will be seeded into the the build environment.
-All files in ```sources``` directory are copied into the container build environment at location
-${BUILD_DIR} which is defined as `/build`. The ```/build/sources``` path is added to *EASYBUILD_SOURCEPATH* making
- the sources available to EasyBuild during container build time.
+Sometimes, you may need to manually seed source files for the docker build stage one. Source files from the ```sources``` directory within the EBcb repo are `COPIED` to `/build/sources`, making the sources available to EasyBuild during container build time.
 
-During run time of the container, sources are searched in ```/app/sources```. If sources
-are not available at run time, they can be copied into the container with ```Docker cp``` command. 
-
-### Deploy new software package to /app (our site software archive)
-We keep our deployed software repository on an NFS mounted at /app. 
-In order to use your recently built EBcb software package container to deploy
-the same package into our /app NFS volume, user ```run_deploy.sh```.
-
-The steps above will use the container you just built, but will re-build the easyconfig and all dependencies into the "real" /app, using Lmod, EasyBuild, and dependent packages from the "real" /app.
-
-Note that the container has it own version of Lmod. Version parity is important so you will always want to keep your /app Lmod in sync with the EBcb Lmod. Edit the ```build_container.sh``` to change the LMOD version in EBcb.
+Note that the container has Lmod installed in /eb/lmod. Version parity is essential, so you will always want to keep your /app Lmod in sync with the EBcb Lmod. LMOD_VER environment variable controls the version of LMOD at Docker Build time.

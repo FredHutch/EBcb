@@ -41,9 +41,12 @@ if [[ -f "${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua" ]]
 then
   cp ${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua ${PREFIX}/modules/all/EasyBuild/${EB_VER}.orig
   mkdir ${PREFIX}/modules/all/EasyBuild_test
+  mkdir ${PREFIX}/modules/all/EasyBuild_ermine
   cp ${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua ${PREFIX}/modules/all/EasyBuild_test/
+  cp ${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua ${PREFIX}/modules/all/EasyBuild_ermine/
   cat ${BUILD_DIR}/scripts/eb_module_footer >> ${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua
   cat ${BUILD_DIR}/scripts/test_module_footer >> ${PREFIX}/modules/all/EasyBuild_test/${EB_VER}.lua
+  cat ${BUILD_DIR}/scripts/ermine_module_footer >> ${PREFIX}/modules/all/EasyBuild_ermine/${EB_VER}.lua
   echo EasyBuild install success
 else
   echo "${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua not writable, modulefile not updated"

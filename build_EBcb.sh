@@ -7,25 +7,25 @@
 # Set the environment variables EBUSER_UID and EBUSER_GID to the UID:GID of your local repository owner
 # Configure your sites UID:GID in the script set_uid.sh
 
+if [[ $# -eq 0 ]]; then
+    echo "Dockerfile name required as argument"
+    exit 1
+fi
+
 eb_vars='EBUSER_UID
 EBUSER_GID
 LMOD_VER
 EB_VER
 TOOLCHAIN'
 
-if [[ $# -eq 0 ]]; then
-    echo "Dockerfile name required as argument"
-    exit 1
-fi
-
 for eb_var in ${eb_vars}; do
     if [[ -z "${!eb_var}" ]]; then
         echo ${eb_var} must be set 
         exit 1
+    else
+        echo eb_var: ${eb_var}
     fi
 done
-echo Repo Owner UID: $EBUSER_UID
-
 
 tag=fredhutch/ls2:eb-${EB_VER}-${TOOLCHAIN}
 echo Creating Container ${tag} from Dockerfile: $1

@@ -3,3 +3,4 @@ scripts/set_uid.sh
 build.log
 bootstrap*
 easyconfigs/*
+scripts/ermine_module_footer
