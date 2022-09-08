@@ -2,9 +2,8 @@
 -- This file is appended to the EasyBuild_test Modules file from test_module_footer
 local ebDir = "/eb"
 local appDir = "/app"
-setenv("EASYBUILD_SOURCEPATH", ebDir .. "/sources")
-append_path("EASYBUILD_SOURCEPATH", appDir .. "/sources")
-setenv("EASYBUILD_BUILDPATH", appDir .. "/build")
+setenv("EASYBUILD_SOURCEPATH", "/sources")
+setenv("EASYBUILD_BUILDPATH", "/build")
 setenv("EASYBUILD_INSTALLPATH", ebDir)
 setenv("EASYBUILD_INSTALLPATH_SOFTWARE", ebDir .. "/software")
 setenv("EASYBUILD_INSTALLPATH_MODULES", ebDir .. "/modules")

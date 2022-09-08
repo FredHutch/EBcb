@@ -116,7 +116,7 @@ RUN \
     mkdir /etc/easybuild.d && \
     chmod 775 /etc/easybuild.d && \
     cp  ${BUILD_DIR}/scripts/config.cfg /etc/easybuild.d && \
-    python3 -m pip install --ignore-installed --prefix $EB_TMPDIR easybuild && \
+    python -m pip install --ignore-installed --prefix $EB_TMPDIR easybuild==${EB_VER} && \
 #-- Install EasyBuild as a Module
     chown -R ${EBUSER_UID}:${EBUSER_GID} ${PREFIX} && \
     su -c "/bin/bash ${BUILD_DIR}/scripts/install_easybuild.sh $EB_VER $PREFIX $EB_TMPDIR $BUILD_DIR" ${EBUSER} && \
@@ -144,6 +144,7 @@ ENV LANG=${LANG}
 ENV EBUSER=eb_user
 ENV EBGROUP=eb_group
 ENV PREFIX=/eb
+ENV BUILD_DIR=/build
 
 WORKDIR /
 COPY --from=build /eb /eb

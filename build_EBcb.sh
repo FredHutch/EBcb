@@ -23,7 +23,7 @@ for eb_var in ${eb_vars}; do
         echo ${eb_var} must be set 
         exit 1
     else
-        echo eb_var: ${eb_var}
+        echo $eb_var: ${!eb_var}
     fi
 done
 

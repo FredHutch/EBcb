@@ -17,6 +17,8 @@
 #          Step Two - Use EasyBuild to reinstall EasyBuild with LMOD to create a lua module. $PREFIX
 #          Start using Python 3 to install and run EasyBuild
 #          Set default Python to Python3, this is done in the Dockerfile
+# 2022.08.24 Pin EasyBuild version. EasyBuild 4.5.4 does not have EasyBuild 4.5.4 easyconfig. 
+#            Pinned EasyConfig needs to be located in /build/easyconfig for "eb" install
  
 echo "Installing EasyBuild into /eb..."
 
@@ -32,7 +34,7 @@ export PYTHONPATH=$(/bin/ls -rtd -1 $EB_TMPDIR/lib*/python*/site-packages | tail
 echo "Loading Lmod..."
 source ${PREFIX}/lmod/lmod/init/profile
 module use ${PREFIX}/modules/all
-eb --install-latest-eb-release --accept-eula-for=Intel-oneAPI --prefix ${PREFIX} --installpath-modules=${PREFIX}/modules
+eb EasyBuild-${EB_VER}.eb --robot /build/easyconfigs --prefix ${PREFIX} --installpath-modules=${PREFIX}/modules
 
 echo Save a copy of the default EasyBuild lua module as ${EB_VER}.orig
 
@@ -46,7 +48,6 @@ then
   cp ${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua ${PREFIX}/modules/all/EasyBuild_ermine/
   cat ${BUILD_DIR}/scripts/eb_module_footer >> ${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua
   cat ${BUILD_DIR}/scripts/test_module_footer >> ${PREFIX}/modules/all/EasyBuild_test/${EB_VER}.lua
-  cat ${BUILD_DIR}/scripts/ermine_module_footer >> ${PREFIX}/modules/all/EasyBuild_ermine/${EB_VER}.lua
   echo EasyBuild install success
 else
   echo "${PREFIX}/modules/all/EasyBuild/${EB_VER}.lua not writable, modulefile not updated"
