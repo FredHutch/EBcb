@@ -19,18 +19,21 @@ EB_VER
 TOOLCHAIN'
 
 for eb_var in ${eb_vars}; do
+    read -p "Enter $eb_var [${!eb_var}]: " value
+    if [[ ! -z "${value}" ]]; then
+         eval $eb_var=${value}
+    fi
     if [[ -z "${!eb_var}" ]]; then
         echo ${eb_var} must be set 
         exit 1
-    else
-        echo $eb_var: ${!eb_var}
     fi
+    echo ${eb_var}=${!eb_var}
 done
 
 tag=fredhutch/ls2:eb-${EB_VER}-${TOOLCHAIN}
 echo Creating Container ${tag} from Dockerfile: $1
-# docker build . --file $1  --tag ${tag}\
-docker build . --file $1 --no-cache --tag ${tag}\
+#docker build . --file $1 --no-cache --tag ${tag}\
+docker build . --file $1            --tag ${tag}\
   --build-arg EBUSER_UID=${EBUSER_UID} \
   --build-arg EBUSER_GID=${EBUSER_GID} \
   --build-arg LMOD_VER=${LMOD_VER} \
