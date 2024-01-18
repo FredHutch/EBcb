@@ -22,7 +22,17 @@ fredhutch/ls2:eb-4.6.0-foss-2021b   51fa37926564
 Use the script `build_EBcb.sh` to create an EBcb Docker container. The environment variables, TOOLCHAIN, EB_VER, EBUSER_UID, EBUSER_GID are used to customize EBcb and tagging the container. EBcb runtime environment uses the account `eb_user` to run EasyBuild. Map your site's software repository owner to the account `eb_user` with the environment variables: EBUSER_UID, EBUSER_GID. 
 
 ### Starting EBcb instance
-Use the script `run_EBcb.sh "container name"` to start an instance of EBcb. Environment variables are by `run_EBcb to select and run an EBcb container. TOOLCHAIN, EB_VER, BUILD_DIR, SOURCE_DIR. `run_EBcb.sh` appends `"container name"` to the image name to a unique image name. EBcb runtime environment for EasyBuild has four primary volume locations: /app, /eb, /build and /sources.  `/app` should be mapped to your target application directory, which contains the subdirectories software and modules. `/eb` is local to the container and should not be mapped.   Map the volume`/sources` to your software source repository. Map the build volume to any suitable scratch area.
+Use the script `run_EBcb.sh "container name"` to start an instance of EBcb. Environment variables are used by 
+`run_EBcb to select and run an EBcb container. TOOLCHAIN, EB_VER, BUILD_DIR, SOURCE_DIR. 
+`run_EBcb.sh` uses **"container name"** to name the image name. EBcb requires three mount points; /app, /build and /sources.
+**/app** should be mapped to your target application directory, which contains the subdirectories software and modules.
+Map `/sources` to your software source repository. The top level of **/sources** shouuld have the familure alphabet directory setup: 
+```
+a  b  c  d  e  f  g  generic  h  i  j  k  l  m  n  o  p  q  r  s  t  u  v  w  x  y  z
+```
+Map the build volume to any suitable scratch area. Local disk is prefered for **/build** for performance purposes. EBcb contains a local
+volume named **/eb** which is local to the container. **/eb** has one toolchain and EasyBuild installed.
+**/eb** contains the subdirecories **software**, **modules**, **lmod**. 
 
 ### Usage
 When the EBcb instance starts, you will be at a root prompt. Become the easybuild user with `su - eb_user` and change the directory to `cd /build.`  Two EasyBuild modules are available in /eb/modules. EasyBuild and EasyBuild_test. EasyBuild_test is used for testing an EasyConfig. EasyBuild_test sets `installpath-software` to `/eb/software` and will not write to the production /app volume. When your EasyConfig is ready to deploy load the module EasyBuild. 
@@ -31,3 +41,10 @@ When the EBcb instance starts, you will be at a root prompt. Become the easybuil
 Sometimes, you may need to manually seed source files for the docker build stage one. Source files from the ```sources``` directory within the EBcb repo are `COPIED` to `/build/sources`, making the sources available to EasyBuild during container build time.
 
 Note that the container has Lmod installed in /eb/lmod. Version parity is essential, so you will always want to keep your /app Lmod in sync with the EBcb Lmod. LMOD_VER environment variable controls the version of LMOD at Docker Build time.
+
+### System Software
+There are some software packages the depend on OS packages. The design of EBcb is to minimize exposure to OS packages, but they
+are sometimes nessisary. Cuda expects to find an OS package for gcc. When additional packages are required, install manually as
+root after the container is started, before SUing to the eb_user.
+
+  * **msodbcsql17** and **unixodbc-dev** modules are required to install the odbc driver in R

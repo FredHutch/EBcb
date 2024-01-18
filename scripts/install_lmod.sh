@@ -3,24 +3,21 @@
 set -x
 set -e
 
-# argument is install prefix
-PREFIX=/eb
+# variables used: LMOD_VER, PREFIX
+echo "LMOD_VER is ${LMOD_VER}"
 echo "PREFIX is ${PREFIX}"
 
-# variables used: LMOD_VER
-echo "LMOD_VER is ${LMOD_VER}"
-
+# Create module and cache directories
 mkdir -p ${PREFIX}/modules/all
-
-LMOD_CONFIGURE="--with-module-root-path=${PREFIX}/modules/all \
-                --with-updateSystemFn=${PREFIX}/lmod/cache/last_update \
-                --with-spiderCacheDir=${PREFIX}/lmod/cache"
+mkdir -p ${PREFIX}/lmod/cache
+chmod g+ws ${PREFIX}/lmod/cache
+export LMOD_CACHE_DIR=${PREFIX}/lmod/cache
 
 # try to preserve group write here
 umask 002
 
 # Get Lmod
-cd $PREFIX 
+cd $PREFIX
 echo "Downloading Lmod..."
 curl -L -o Lmod-${LMOD_VER}.tar.gz https://github.com/TACC/Lmod/archive/${LMOD_VER}.tar.gz
 
@@ -29,15 +26,17 @@ tar -xzf Lmod-${LMOD_VER}.tar.gz
 
 echo "Building Lmod version ${LMOD_VER}..."
 cd Lmod-${LMOD_VER}
-./configure --prefix=${PREFIX} --with-tcl=no ${LMOD_CONFIGURE}
+./configure --prefix=${PREFIX}\
+ --with-tcl=no \
+ --with-module-root-path=${PREFIX}/modules/all\
+ --with-ModulePathInit=/app/modules/all \
+ --with-spiderCacheDir=${PREFIX}/lmod/cache \
+ --with-updateSystemFn=${PREFIX}/lmod/cache/last_updat
+
+# install
 make install
 
-mkdir ${PREFIX}/lmod/cache \
-&& chown $LS2_UID.$LS2_GID ${PREFIX}/lmod/cache \
-&& chmod g+ws ${PREFIX}/lmod/cache
-export LMOD_CACHE_DIR=${PREFIX}/lmod/cache
-
 # Clean up
-cd ..
+cd ${PREFIX}
 rm -r Lmod-${LMOD_VER}
 rm Lmod-${LMOD_VER}.tar.gz

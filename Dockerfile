@@ -1,5 +1,6 @@
 FROM ubuntu:18.04 AS build
 
+# Oct 2022 - Use Python3.8 for EasyBuild
 # Aug 2021 - Use Python3 for Easybuild. Remove Python2. Install EasyBuild to
 # /tmp with pip and re-install EasyBuild with EasyBuild as a module.
 
@@ -62,6 +63,7 @@ RUN \
     libssl-dev \
     libcrypto++6 \
     openssl \
+    bc \
     lua5.3 \
     liblua5.3-0 \
     liblua5.3-dev \
@@ -69,14 +71,18 @@ RUN \
     lua-posix \
     lua-json \
     lua-term \
-    python3 \
+    python3.8 \
+    python3.8-dev \
+    python3-distutils \
+    python3-certifi \
+    libpython3.8-dev \
+    libpython3.8-stdlib \ 
     python3-pip \
-    python3-pep8 \
-    python3-setuptools \
     groff groff-base  manpages manpages-dev && \
 # Make Python3 the default
-    update-alternatives --install /usr/bin/python python /usr/bin/python3 1 && \
-    update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1 && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.8 1 && \
+    python -m pip install --upgrade pip && \
+    update-alternatives --install /usr/bin/pip pip /usr/local/bin/pip 1 && \
 # setup sudo for eb_user
     echo "${EBUSER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
 # Fix issues with lua5.3 5.3.3-1 on Ubuntu 18.04
@@ -108,9 +114,11 @@ RUN  chown -R ${EBUSER_UID}:${EBUSER_GID} ${BUILD_DIR}
 #   EasyBuild is used to build toolchain in /eb directory
 #   save original EasyBuild.lua so it can be re-configured to build target /app
 RUN \
-    mkdir ${PREFIX} && \
+    mkdir -p ${PREFIX}/modules && \
+    mkdir -p ${PREFIX}/lmod/ && \
 #--- Install LMod local
-    su -c "/bin/bash ${BUILD_DIR}/scripts/install_lmod.sh" && \
+    /bin/bash ${BUILD_DIR}/scripts/install_lmod.sh $LMOD_VER && \
+    chown -R $EBUSER_UID:$EBUSER_GID ${PREFIX} && \
 #--- Install tmp EB
     mkdir $EB_TMPDIR && \
     mkdir /etc/easybuild.d && \
@@ -150,10 +158,14 @@ WORKDIR /
 COPY --from=build /eb /eb
 COPY scripts/modules.sh /etc/profile.d/
 
+
 RUN mkdir /etc/easybuild.d && \
+    mkdir -p /etc/OpenCL/vendors && \
     chmod 775 /etc/easybuild.d
 COPY scripts/config.cfg /etc/easybuild.d/config.cfg
-RUN chmod 644 /etc/easybuild.d/config.cfg
+COPY etc/nvidia.icd /etc/OpenCL/vendors/nvidia.icd
+RUN chmod 644 /etc/easybuild.d/config.cfg && \
+    chmod 644 /etc/OpenCL/vendors/nvidia.icd
 
 RUN groupadd -g ${EBUSER_GID} ${EBGROUP} && \
     useradd -u ${EBUSER_UID} -g ${EBGROUP} -ms /bin/bash ${EBUSER} && \
@@ -187,12 +199,18 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
     lua-json \
     lua-term \
     liblua5.3-0 \
-    python3 \
+    python3.8 \
+    python3.8-dev \
     python3-distutils \
-    python3-setuptools \
-    python3-pep8 && \
+    python3-certifi \
+    python3.8-venv \
+    libpython3.8-stdlib \
+    lsb-release \
+    && \
 # Make Python3 the default
-    update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.8 1 && \
+# Update CA
+    update-ca-certificates --fresh
 
 # Fix issues with lua5.3 5.3.3-1 on Ubuntu 18.04
 # lua-posix changed its main module name from posix_c to posix which causes
