@@ -30,7 +30,7 @@ for eb_var in ${eb_vars}; do
     echo ${eb_var}=${!eb_var}
 done
 
-tag=fredhutch/ls2:eb-${EB_VER}-${TOOLCHAIN}
+tag=sc-registry.fredhutch.org/eb:${EB_VER}-${TOOLCHAIN}
 echo Creating Container ${tag} from Dockerfile: $1
 #docker build . --file $1 --no-cache --tag ${tag}\
 docker build . --file $1            --tag ${tag}\
