@@ -1,0 +1,29 @@
+# eb_user profile
+# copy to ~/.bash_profile
+
+# setup modules environment
+source /eb/lmod/lmod/init/profile
+module use /eb/modules/all:/app/modules/all
+
+set -o vi
+
+test () {
+  export EASYBUILD_INSTALLPATH=/eb
+  export EASYBUILD_INSTALLPATH_SOFTWARE=/eb/software
+  export EASYBUILD_INSTALLPATH_MODULES=/eb/modules
+  export EASYBUILD_REPOSITORYPATH=/eb/ebfiles_repo
+  PS1="\[\e[0;31m\][Test \u@\h($ARCH) \W]\$ \[\e[m\]"
+}
+
+prod () {
+  export EASYBUILD_INSTALLPATH=/app
+  export EASYBUILD_INSTALLPATH_SOFTWARE=/app/software
+  export EASYBUILD_INSTALLPATH_MODULES=/app/modules
+  export EASYBUILD_REPOSITORYPATH=/app/ebfiles_repo
+  PS1="\[\e[0;32m\][Prod \u@\h($ARCH) \W]\$ \[\e[m\]"
+}
+
+prod
+#
+echo load EasyBuild
+module load EasyBuild

@@ -8,7 +8,7 @@ setenv("EASYBUILD_INSTALLPATH_SOFTWARE", ebDir .. "/software")
 setenv("EASYBUILD_INSTALLPATH_MODULES", ebDir .. "/modules")
 setenv("EASYBUILD_REPOSITORYPATH", ebDir .. "/ebfiles_repo")
 setenv("EASYBUILD_LOGFILE_FORMAT", "logs,easybuild-%(name)s-%(version)s-%(date)s.%(time)s.log")
-setenv("EASYBUILD_CONFIGFILES", ebDir .. "/easybuild/config.cfg")
+setenv("EASYBUILD_CONFIGFILES", "/eb/easybuild/config.cfg")
 -- keep group writable bit
 setenv("EASYBUILD_GROUP_WRITABLE_INSTALLDIR", 1)
 -- set umask to preserve group write permissions on modulefiles

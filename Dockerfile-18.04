@@ -1,0 +1,210 @@
+FROM ubuntu:18.04 AS build
+
+# Sep 2024  - Update for Ubuntu 24.04
+# Oct 2022 - Use Python3.8 for EasyBuild
+# Aug 2021 - Use Python3 for Easybuild. Remove Python2. Install EasyBuild to
+# /tmp with pip and re-install EasyBuild with EasyBuild as a module.
+
+# updated to support EasyBuild 4.x  summer 2019
+# Create Easybuild container with docker multi-stage.
+# EasyBuild requires build-essentials, but the final EasyBuild container
+# should have no OS native build tools.
+# stage <build>; use build-essentials to build EasyBuild and toolchain.
+# Write all EB tools to /eb directory
+# Final <easybuild> container COPIES /eb without bring any build-essentials
+# into the final container.
+
+ARG EBUSER_UID
+ARG EBUSER_GID
+ARG LMOD_VER
+ARG EB_VER
+ARG TZ
+ENV TZ=${TZ}
+ARG LANG=LANG
+ENV LANG=${LANG}
+
+ARG EBUSER=eb_user
+ARG EBGROUP=eb_group
+ARG PREFIX=/eb
+ARG EB_PYTHON=/usr/local/bin/python3
+ARG BUILD_DIR=/build
+ARG EB_TMPDIR=/tmp/eb
+ARG DEBIAN_FRONTEND=noninteractive
+ARG PYVER=3.11.5
+ARG PYVER_SHORT=3.11
+
+# OS Level
+# OS Packages, EasyBuild needs Python and Lmod, Lmod needs lua
+# Base OS packages, user account, set TZ, user account EBUSER
+# Create install directory ${BUILD_DIR}
+RUN echo "LANG=${LANG}" > /etc/default/locale && \
+    apt-get update -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y locales && \
+    /usr/sbin/locale-gen en_US.UTF-8 && \
+    update-locale LANG=$LANG
+
+RUN \
+    groupadd -g ${EBUSER_GID} ${EBGROUP} && \
+    useradd -u ${EBUSER_UID} -g ${EBUSER_GID} -ms /bin/bash ${EBUSER} && \
+    mkdir ${BUILD_DIR} && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    build-essential \
+    libibverbs-dev libc6-dev make file unzip xz-utils \
+    libgomp1 \
+    libbz2-dev libffi-dev \
+    lzma-dev \
+    zlib1g-dev \
+    autopoint \
+    bash \
+    curl \
+    cpio \
+    git \
+    sudo \
+    ssl-cert \
+    libssl-dev \
+    libcrypto++6 \
+    openssl \
+    bc \
+    lua5.3 \
+    liblua5.3-0 \
+    liblua5.3-dev \
+    lua-filesystem \
+    lua-posix \
+    lua-json \
+    lua-term \
+    groff groff-base  manpages manpages-dev && \
+# setup sudo for eb_user
+    echo "${EBUSER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+# Fix issues with lua5.3 5.3.3-1 on Ubuntu 18.04
+    ln -s /usr/bin/lua5.3 /usr/bin/lua && \
+    ln -s /usr/bin/luac5.3 /usr/bin/luac && \
+    cd /usr/lib/x86_64-linux-gnu/lua/5.3 && \
+    ln -s ../../liblua5.3-posix.so.1.0.0 posix.so
+
+
+# copy helper scripts for building lmod, easybuild and
+# setup the environment for the the EBUSER_
+ADD scripts  ${BUILD_DIR}/scripts
+ADD easyconfigs ${BUILD_DIR}/easyconfigs
+ADD sources ${BUILD_DIR}/sources
+
+RUN  chown -R ${EBUSER_UID}:${EBUSER_GID} ${BUILD_DIR}
+
+# lmod EasyBuild layer
+# Base Ubuntu containers have no develop tools. In order to build Easybuild and the foss toolchain
+# build-essentials are required. But we do not want build-essentials to be part of the
+# EasyBuild continaer. EasyBuild and toolchain are built in 'build' stage and not copied
+# into the easybuild stage.
+
+
+#-- Build the /eb volume in a single command -
+#   Install Python, LMOD, EB to Directory /eb
+#   configure EB build target to build software in directory /eb
+#   EasyBuild is used to build toolchain in /eb directory
+#   save original EasyBuild.lua so it can be re-configured to build target /app
+RUN \
+    mkdir -p ${PREFIX}/build ${PREFIX}/modules ${PREFIX}/easybuild.d && \
+    cp ${BUILD_DIR}/scripts/bionic.cfg ${PREFIX}/easybuild.d/config.cfg && \
+    chown -R $EBUSER_UID:$EBUSER_GID ${PREFIX} && \
+#-- Install LMod local
+    /bin/bash ${BUILD_DIR}/scripts/install_lmod.sh $LMOD_VER && \
+#-- Install Python from source. Default is /usr/local
+    cd /tmp && \
+    tar -xzf /build/sources/Python-3.11.5.tgz && \
+    cd Python-3.11.5 && \
+    ./configure --enable-optimizations && \
+    make && \
+    make install && \
+    ${EB_PYTHON} -m pip install --upgrade pip && \
+    ${EB_PYTHON} -m pip install wheel && \
+#-- Install EasyBuild from pip
+    ${EB_PYTHON} -m pip install --break-system-packages easybuild==${EB_VER} && \
+#-- Install EasyBuild via pip
+    chown -R ${EBUSER_UID}:${EBUSER_GID} ${PREFIX} && \
+    su -c "/bin/bash  ${BUILD_DIR}/scripts/install_eb-24.04.sh $EB_VER $PYVER_SHORT" ${EBUSER}
+
+### Finished with build container
+### ============================================
+### Create the EB container from "build" container
+###
+FROM ubuntu:18.04 AS easybuild
+
+ARG EBUSER_UID=EBUSER_UID
+ARG EBUSER_GID=EBUSER_GID
+ARG TZ=TZ
+ENV TZ=${TZ}
+ARG LANG=LANG
+ENV LANG=${LANG}
+
+ENV USER=eb_user
+ENV EBUSER=eb_user
+ENV EBGROUP=eb_group
+ARG PREFIX=/eb
+ARG BUILD_DIR=/eb/build
+ENV EB_PYTHON=/usr/local/bin/python3
+
+WORKDIR /
+COPY --from=build /eb /eb
+COPY --from=build /usr/local /usr/local
+ADD scripts  ${BUILD_DIR}/scripts
+
+RUN mkdir -p /etc/OpenCL/vendors && \
+    chmod 777 ${PREFIX}
+COPY etc/nvidia.icd /etc/OpenCL/vendors/nvidia.icd
+RUN chmod 644 /etc/OpenCL/vendors/nvidia.icd
+
+# Create eb_user account and /app directories
+RUN groupadd -g ${EBUSER_GID} ${EBGROUP} && \
+    useradd -u ${EBUSER_UID} -g ${EBGROUP} -ms /bin/bash ${EBUSER} && \
+    cp ${BUILD_DIR}/scripts/bash_profile /home/${EBUSER}/.bash_profile && \
+    chmod u+x /home/${EBUSER}/.bash_profile && \ 
+    chown -R ${EBUSER_UID}:${EBUSER_GID} /home/${EBUSER} ${BUILD_DIR} && \
+    echo "source ~/.bash_profile" >> /home/${EBUSER}/.bashrc && \
+    mkdir /app && chown -R ${EBUSER}:${EBGROUP} /app && \
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# set Languange
+RUN echo "LANG=${LANG}" > /etc/default/locale && \
+    DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
+    apt-utils locales && \
+    /usr/sbin/locale-gen en_US.UTF-8 && \
+    update-locale LANG=${LANG}
+
+# libibverbs-dev is required by PyTorch
+# bc is required by LMOD
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
+    ca-certificates bzip2 make unzip xz-utils \
+    libibverbs-dev libc6-dev libnspr4-dev libxml2 linux-generic \
+    bzip2 liblz4-1 zlib1g \
+    autopoint \
+    bc \
+    curl wget file  cpio vim \
+    git \
+    sudo \
+    ssl-cert \
+    libssl-dev \
+    libcrypto++6 \
+    openssl \
+    lua5.3 \
+    liblua5.3-0 \
+    lua-filesystem \
+    lua-posix \
+    lua-json \
+    lua-term \
+    lsb-release \
+    && \
+#-- setup sudo for eb_user
+    echo "${EBUSER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+#-- Fix issues with lua5.3 5.3.3-1 on Ubuntu 18.04
+    ln -s /usr/bin/lua5.3 /usr/bin/lua && \
+    ln -s /usr/bin/luac5.3 /usr/bin/luac && \
+    cd /usr/lib/x86_64-linux-gnu/lua/5.3 && \
+    ln -s ../../liblua5.3-posix.so.1.0.0 posix.so && \
+#-- Update CA
+    update-ca-certificates --fresh
+
+#  switch to EBUSER user for future actions
+USER ${EBUSER}
+WORKDIR /app/build 
+SHELL ["/bin/bash", "-l"]
