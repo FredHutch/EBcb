@@ -2,17 +2,32 @@
 # copy to ~/.bash_profile
 
 # setup modules environment
+export LMOD_IGNORE_CACHE=no
 source /eb/lmod/lmod/init/profile
 module use /eb/modules/all:/app/modules/all
 
+export PATH=/eb/bin:$PATH
+
 set -o vi
+. /etc/os-release
+grep -q AuthenticAMD /proc/cpuinfo && [[ $? == 0 ]] && CPU=AMD
+grep -q GenuineIntel /proc/cpuinfo && [[ $? == 0 ]] && CPU=Intel
+if [[ $CPU == 'AMD' ]]; then
+    grep -q "avx2" /proc/cpuinfo && [[ $? == 0 ]] && ARCH=Zen3
+    grep -q "avx512" /proc/cpuinfo && [[ $? == 0 ]] && ARCH=Zen4
+fi
+if [[ $CPU == 'Intel' ]]; then
+    grep -q "avx2" /proc/cpuinfo && [[ $? == 0 ]] && ARCH=haswel
+    grep -q "avx512" /proc/cpuinfo && [[ $? == 0 ]] && ARCH=skylake
+fi
+
 
 test () {
   export EASYBUILD_INSTALLPATH=/eb
   export EASYBUILD_INSTALLPATH_SOFTWARE=/eb/software
   export EASYBUILD_INSTALLPATH_MODULES=/eb/modules
   export EASYBUILD_REPOSITORYPATH=/eb/ebfiles_repo
-  PS1="\[\e[0;31m\][Test \u@\h($ARCH) \W]\$ \[\e[m\]"
+  PS1="\[\e[0;31m\][Test $VERSION_CODENAME-$ARCH \W]\$ \[\e[m\]"
 }
 
 prod () {
@@ -20,10 +35,10 @@ prod () {
   export EASYBUILD_INSTALLPATH_SOFTWARE=/app/software
   export EASYBUILD_INSTALLPATH_MODULES=/app/modules
   export EASYBUILD_REPOSITORYPATH=/app/ebfiles_repo
-  PS1="\[\e[0;32m\][Prod \u@\h($ARCH) \W]\$ \[\e[m\]"
+  PS1="\[\e[0;32m\][Prod $VERSION_CODENAME-$ARCH \W]\$ \[\e[m\]"
 }
 
 prod
 #
-echo load EasyBuild
 module load EasyBuild
+echo EasyBuild Loaded

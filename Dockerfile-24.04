@@ -57,9 +57,7 @@ RUN \
     zlib1g-dev \
     autopoint \
     bash \
-    curl \
-    cpio \
-    git \
+    curl wget git file cpio \
     sudo \
     ssl-cert \
     libssl-dev \
@@ -172,9 +170,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
     bzip2 libffi8 liblz4-1 zlib1g \
     autopoint \
     bc \
-    curl wget file \
-    cpio \
-    git \
+    curl wget git file cpio vim \
     sudo \
     ssl-cert \
     libssl-dev \
@@ -196,5 +192,5 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
 
 #  switch to EBUSER user for future actions
 USER ${EBUSER}
-WORKDIR ${PREFIX}
+WORKDIR /app/build 
 SHELL ["/bin/bash", "-l"]
