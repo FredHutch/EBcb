@@ -1,16 +1,33 @@
 #!/bin/bash
 
 # build the EasyBuild container
-# source set_env.sh first to setup environment
+# usage: build_ebcb.sh [Dockerfile] 
 
-# Customize the file permissions to your local site.
-# Set the environment variables EBUSER_UID and EBUSER_GID to the UID:GID of your local repository owner
-# Configure your sites UID:GID in the script set_uid.sh
+# Set these environment variables to control how the container is built. 
+#  BUILD_HOSTS - list of machines with Docker installed that can be used as build hosts
+#  EBUSER_UID and EBUSER_GID to the UID:GID of your local repository owner
+#  LMOD_VER
+#  EB_VER=${EB_VER} \
+#
+# Local customization of these variables is done with scripts/set_env.sh 
 
 if [[ $# -eq 0 ]]; then
     echo "Dockerfile name required as argument"
     exit 1
 fi
+
+if [[ ! -z "${BUILD_HOSTS}" ]]; then
+    echo environment BUILD_HOSTS must be defined as a list of build machines.
+    exit 1
+fi
+
+host=`uname -n`
+if  [[ ! $BUILD_HOSTS =~ $host  ]]; then
+    echo Not an EBcb host. This script must be run from : $BUILD_HOSTS
+    exit 1
+fi
+eb_cfg_file=${host}.cfg
+echo Using Config file: $eb_cfg_file
 
 os_version=`grep VERSION_ID /etc/os-release`
 [[ $os_version == *"18.04"* ]] && OS=bionic
@@ -33,6 +50,7 @@ fi
 grep -q EPYC /proc/cpuinfo
 [[ $? == 0 ]] && ARCH=zen4
 
+
 eb_vars='EBUSER_UID
 EBUSER_GID
 LMOD_VER
@@ -54,8 +72,9 @@ done
 
 tag=fredhutch/ls2:${OS}-${ARCH}-eb.${EB_VER}${TAG}
 echo Creating Container ${tag} from Dockerfile: $1
-# docker build . --file $1 --no-cache --tag ${tag}\
-docker build . --file $1            --tag ${tag}\
+# docker build . --file $1            --tag ${tag}\
+docker build . --file $1 --no-cache --tag ${tag}\
+  --build-arg EB_CFG=${eb_cfg_file} \
   --build-arg EBUSER_UID=${EBUSER_UID} \
   --build-arg EBUSER_GID=${EBUSER_GID} \
   --build-arg LMOD_VER=${LMOD_VER} \
