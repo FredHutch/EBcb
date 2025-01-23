@@ -1,5 +1,6 @@
 FROM ubuntu:18.04 AS build
 
+# Jan 2025 - Add EB_CFG
 # Sep 2024  - Update for Ubuntu 24.04
 # Oct 2022 - Use Python3.8 for EasyBuild
 # Aug 2021 - Use Python3 for Easybuild. Remove Python2. Install EasyBuild to
@@ -22,6 +23,7 @@ ARG TZ
 ENV TZ=${TZ}
 ARG LANG=LANG
 ENV LANG=${LANG}
+ARG EB_CFG
 
 ARG EBUSER=eb_user
 ARG EBGROUP=eb_group
@@ -57,9 +59,7 @@ RUN \
     zlib1g-dev \
     autopoint \
     bash \
-    curl \
-    cpio \
-    git \
+    curl wget git file cpio \
     sudo \
     ssl-cert \
     libssl-dev \
@@ -74,8 +74,6 @@ RUN \
     lua-json \
     lua-term \
     groff groff-base  manpages manpages-dev && \
-# setup sudo for eb_user
-    echo "${EBUSER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
 # Fix issues with lua5.3 5.3.3-1 on Ubuntu 18.04
     ln -s /usr/bin/lua5.3 /usr/bin/lua && \
     ln -s /usr/bin/luac5.3 /usr/bin/luac && \
@@ -105,7 +103,7 @@ RUN  chown -R ${EBUSER_UID}:${EBUSER_GID} ${BUILD_DIR}
 #   save original EasyBuild.lua so it can be re-configured to build target /app
 RUN \
     mkdir -p ${PREFIX}/build ${PREFIX}/modules ${PREFIX}/easybuild.d && \
-    cp ${BUILD_DIR}/scripts/bionic.cfg ${PREFIX}/easybuild.d/config.cfg && \
+    cp ${BUILD_DIR}/scripts/${EB_CFG} ${PREFIX}/easybuild.d/config.cfg && \
     chown -R $EBUSER_UID:$EBUSER_GID ${PREFIX} && \
 #-- Install LMod local
     /bin/bash ${BUILD_DIR}/scripts/install_lmod.sh $LMOD_VER && \
@@ -174,13 +172,12 @@ RUN echo "LANG=${LANG}" > /etc/default/locale && \
 # libibverbs-dev is required by PyTorch
 # bc is required by LMOD
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
-    ca-certificates bzip2 make unzip xz-utils \
-    libibverbs-dev libc6-dev libnspr4-dev libxml2 linux-generic \
+    ca-certificates bzip2 unzip xz-utils \
+    libibverbs-dev libxml2 linux-generic libnspr4-dev \
+    libc6-dev \
     bzip2 liblz4-1 zlib1g \
-    autopoint \
-    bc \
-    curl wget file  cpio vim \
-    git \
+    autopoint bc \
+    curl wget git file cpio vim \
     sudo \
     ssl-cert \
     libssl-dev \
