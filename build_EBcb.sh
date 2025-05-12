@@ -16,8 +16,8 @@ if [[ $# -eq 0 ]]; then
     exit 1
 fi
 
-if [[ ! -z "${BUILD_HOSTS}" ]]; then
-    echo environment BUILD_HOSTS must be defined as a list of build machines.
+if [[ -z "${BUILD_HOSTS}" ]]; then
+    echo environment BUILD_HOSTS must be defined as a list of build machines. $BUILD_HOSTS
     exit 1
 fi
 
@@ -43,7 +43,7 @@ if [[ $? == 0 ]]; then
     if [[ $AVX512 == "TRUE" ]]; then
         ARCH=skylake
     elif [[ $AVX2 == "TRUE" ]]; then
-        ARCH=haswell
+        ARCH=broadwell
     fi
 fi
 

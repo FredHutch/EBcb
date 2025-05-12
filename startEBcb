@@ -1,0 +1,88 @@
+#!/bin/bash
+
+# Start an EBcb container 
+# EBcb EasyBuild container build
+#
+# Build EasyBuild easyconfig in a container.  EBcb containers are run by the user scicomp. 
+# scicomp user owns all the software in /app/software
+#
+# EBcb containers are versioned by the componnet, TOOLCHAIN, EasyBuild version, and LMOD.
+# EBcb containers are prefixed with fredhutch/ls2 (Live Science Software)
+#
+# EBcb needs three mount points, /app,  /build and /sources
+#
+# As of the summer of 2022, SciComp supports 3 hardware types for /app/software
+#
+# silver:/ifs/data/scdata/app/Ubuntu18.04/public  (Intel SilverLake AVX 512)  Gizmo J, K and Rhino00
+# silver:/ifs/data/scdata/app/haswell/public      (Intel Haswell AVX 2)  Volta
+# silver:/ifs/data/scdata/app/epyc/public         (AMD Zen3 )  Ermine
+#
+# /app/sources on silver:/ifs/data/scdata/app/Ubuntu18.04/public is used for ALL source code. There
+# is no need to duplicate the source directory. In the future is should be split into a seperate volume.
+# On systems that do no have SilverLake class processors, sources are mounted as: /eb/sources
+#
+#  Use a local file system for BUILD_DIR. Historically /app/build was used, but Silver is so slow that it is 
+#  no longer usable for a build location.
+
+if [ "$#" -ne 1 ]; then
+    echo "Usage: " `basename "$0"` " container_name"
+    exit 1
+fi
+name=$1
+
+build_hosts='quokka sc-build-01 sc-build-02 ermine volta maestro'
+host=`uname -n`
+if  [[ ! $build_hosts =~ $host  ]]; then
+    echo Not an EBcb host. Run from one of these: $build_hosts
+    exit 1
+fi
+
+export EBUSER_UID=6514  # scicomp
+export EBUSER_GID=6514  # g_scicomp
+
+export BUILD_DIR=/loc/eb_build
+if [ -d "/eb/sources" ]; then
+    export SOURCE_DIR=/eb/sources
+elif [ -d "/app/sources" ]; then
+    export SOURCE_DIR=/app/sources
+else
+    echo "Can't find sources"
+    exit 1
+fi
+echo SOURCES $SOURCE_DIR 
+
+prefix="fredhutch/ls2"
+list=`docker images | grep ls2 | sort | awk '{print $2}'`
+
+n=1
+for image in $list; do
+   echo "$n ) $image"
+   n=$(( $n + 1 ))
+done
+echo
+echo -n "Select Container: "
+read number
+
+echo -n "Do you need a GPU? [y/n]: "
+read gpu_needed
+if [[ "yY" == *"$gpu_needed"* ]]; then
+   gpu="--gpus=1"
+else
+   gpu=""
+fi
+
+set -- $list
+containerName=${prefix}:${!number}
+echo Starting: ${containerName}  as $name
+
+docker run $gpu  --rm -ti --name $name --hostname $name \
+  --security-opt="seccomp=unconfined" \
+  --env EASYCONFIG=foo \
+  --env EBcb_HOST=$EBcb_host \
+  --env LANG=en_US.UTF-8 \
+  -v /app/software:/app/software \
+  -v /app/modules:/app/modules \
+  -v /app/lmod:/app/lmod \
+  -v ${SOURCE_DIR}:/app/sources \
+  -v ${BUILD_DIR}:/app/build \
+  ${containerName} bash 

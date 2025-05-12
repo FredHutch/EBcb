@@ -115,7 +115,7 @@ RUN \
     make && \
     make install && \
     ${EB_PYTHON} -m pip install --upgrade pip && \
-    ${EB_PYTHON} -m pip install wheel && \
+    ${EB_PYTHON} -m pip install wheel rich && \
 #-- Install EasyBuild from pip
     ${EB_PYTHON} -m pip install --break-system-packages easybuild==${EB_VER} && \
 #-- Install EasyBuild via pip
@@ -174,6 +174,7 @@ RUN echo "LANG=${LANG}" > /etc/default/locale && \
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
     ca-certificates bzip2 unzip xz-utils \
     libibverbs-dev libxml2 linux-generic libnspr4-dev \
+    make \
     libc6-dev \
     bzip2 liblz4-1 zlib1g \
     autopoint bc \

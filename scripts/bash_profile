@@ -21,6 +21,7 @@ if [[ $CPU == 'Intel' ]]; then
     grep -q "avx512" /proc/cpuinfo && [[ $? == 0 ]] && ARCH=skylake
 fi
 
+export EASYBUILD_MODULE_EXTENSIONS=False
 
 test () {
   export EASYBUILD_INSTALLPATH=/eb
